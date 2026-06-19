@@ -36,14 +36,36 @@
 
 ## 🚀 快速开始
 
-### 前置要求
+### 🐳 方式一：Docker Compose（推荐，无需手动安装任何依赖）
 
-| 软件        | 版本要求 | 下载地址                                                                            |
-| ----------- | -------- | ----------------------------------------------------------------------------------- |
-| SQL Server  | 2019+    | [下载](https://www.microsoft.com/sql-server/sql-server-downloads)                      |
-| SSMS (可选) | 最新版   | [下载](https://docs.microsoft.com/sql/ssms/download-sql-server-management-studio-ssms) |
-| .NET SDK    | 8.0      | [下载](https://dotnet.microsoft.com/download/dotnet/8.0)                               |
-| Node.js     | 18+      | [下载](https://nodejs.org/)                                                            |
+**前置要求：** 安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+**一条命令启动全部服务：**
+
+```bash
+docker compose up -d
+```
+
+等待约 1-2 分钟（SQL Server 首次启动需初始化），然后打开浏览器访问 `http://localhost`。
+
+Docker 会自动完成：
+- ✅ 启动 SQL Server 2022
+- ✅ 创建 16 张数据库表
+- ✅ 插入测试数据
+- ✅ 启动后端 API（端口 5000）
+- ✅ 启动前端页面（端口 80）
+
+**停止服务：**
+```bash
+docker compose down
+```
+
+**删除数据重新开始：**
+```bash
+docker compose down -v
+```
+
+### 📦 方式二：本地手动部署
 
 ### 第一步：初始化数据库
 
