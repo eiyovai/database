@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using CampusVisitorApi.Data;
 using CampusVisitorApi.DTOs;
+using CampusVisitorApi.Models;
 using CampusVisitorApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,8 +14,13 @@ namespace CampusVisitorApi.Controllers;
 public class ReservationController : ControllerBase
 {
     private readonly IReservationService _service;
+    private readonly CampusVisitorDbContext _db;
 
-    public ReservationController(IReservationService service) => _service = service;
+    public ReservationController(IReservationService service, CampusVisitorDbContext db)
+    {
+        _service = service;
+        _db = db;
+    }
 
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CreateReservationRequest request)
@@ -51,6 +58,19 @@ public class ReservationController : ControllerBase
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await _service.CancelAsync(userId, id);
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            OperatorId = userId,
+            ActionType = "user",
+            ActionDetail = $"取消预约：ID={id}",
+            TargetType = "Reservation",
+            TargetId = id,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            Result = "success",
+        });
+        await _db.SaveChangesAsync();
+
         return Ok(new { message = "预约已取消" });
     }
 
@@ -71,6 +91,21 @@ public class ReservationController : ControllerBase
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await _service.ReviewAsync(userId, id, request);
+
+        // 记录审计日志
+        var statusText = request.Status == "approved" ? "审核通过" : "审核拒绝";
+        _db.AuditLogs.Add(new AuditLog
+        {
+            OperatorId = userId,
+            ActionType = "review",
+            ActionDetail = $"{statusText}预约：ID={id}",
+            TargetType = "Reservation",
+            TargetId = id,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            Result = "success",
+        });
+        await _db.SaveChangesAsync();
+
         return Ok(new { message = "操作成功" });
     }
 }

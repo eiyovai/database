@@ -37,6 +37,12 @@ public class ReviewReportRequest
     public string? Remark { get; set; }
 }
 
+public class AddBlacklistRequest
+{
+    public string UserName { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+}
+
 public class DashboardStatsResponse
 {
     public int TodayReservations { get; set; }

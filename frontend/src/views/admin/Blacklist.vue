@@ -2,6 +2,30 @@
   <div class="blacklist-page">
     <h2 class="page-title">黑名单管理</h2>
 
+    <div style="margin-bottom: 16px">
+      <el-button type="danger" @click="showAddDialog = true">
+        <el-icon><Plus /></el-icon>添加黑名单
+      </el-button>
+    </div>
+
+    <!-- 添加黑名单对话框 -->
+    <el-dialog v-model="showAddDialog" title="添加黑名单" width="420px">
+      <el-form :model="addForm" label-width="80px">
+        <el-form-item label="用户名">
+          <el-select v-model="addForm.userName" filterable placeholder="请选择用户" style="width: 100%">
+            <el-option v-for="u in userList" :key="u.id" :label="`${u.name} (${u.phone})`" :value="u.name" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="拉黑原因">
+          <el-input v-model="addForm.reason" type="textarea" :rows="3" placeholder="请输入拉黑原因" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showAddDialog = false">取消</el-button>
+        <el-button type="danger" @click="handleAdd" :loading="adding">确定拉黑</el-button>
+      </template>
+    </el-dialog>
+
     <el-card shadow="never">
       <el-table :data="list" stripe>
         <el-table-column label="姓名" width="100">
@@ -34,10 +58,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getBlacklist, removeBlacklist } from '@/api/admin'
+import { getBlacklist, removeBlacklist, addBlacklist, getUserList } from '@/api/admin'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const list = ref([])
+const showAddDialog = ref(false)
+const adding = ref(false)
+const userList = ref([])
+const addForm = ref({ userName: '', reason: '' })
 
 const violationTypeMap = {
   no_show: '预约爽约', overstay: '超时滞留', trespass: '越权进入',
@@ -54,10 +82,37 @@ async function fetchList() {
     const res = await getBlacklist()
     list.value = res.items || res
   } catch {
-    list.value = [
-      { name: '赵六', phone: '136****4321', violationCount: 3, violations: ['no_show', 'overstay'], blacklistedAt: '2026-06-15 14:30', reason: '累计爽约2次+超时滞留1次' },
-      { name: '钱七', phone: '135****8765', violationCount: 2, violations: ['trespass'], blacklistedAt: '2026-06-10 09:00', reason: '擅自进入封闭实验室区域' },
-    ]
+    list.value = []
+  }
+}
+
+async function fetchUsers() {
+  try {
+    const res = await getUserList()
+    userList.value = res.items || res || []
+  } catch {}
+}
+
+async function handleAdd() {
+  if (!addForm.value.userName) {
+    ElMessage.warning('请选择用户')
+    return
+  }
+  if (!addForm.value.reason) {
+    ElMessage.warning('请输入拉黑原因')
+    return
+  }
+  adding.value = true
+  try {
+    await addBlacklist(addForm.value)
+    ElMessage.success('已加入黑名单')
+    showAddDialog.value = false
+    addForm.value = { userName: '', reason: '' }
+    await fetchList()
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '添加失败')
+  } finally {
+    adding.value = false
   }
 }
 
@@ -70,7 +125,10 @@ async function handleRemove(row) {
   } catch {}
 }
 
-onMounted(fetchList)
+onMounted(() => {
+  fetchList()
+  fetchUsers()
+})
 </script>
 
 <style scoped>

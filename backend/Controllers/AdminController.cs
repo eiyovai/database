@@ -1,8 +1,10 @@
+using CampusVisitorApi.Data;
 using CampusVisitorApi.DTOs;
 using CampusVisitorApi.Models;
 using CampusVisitorApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampusVisitorApi.Controllers;
 
@@ -12,8 +14,13 @@ namespace CampusVisitorApi.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _service;
+    private readonly CampusVisitorDbContext _db;
 
-    public AdminController(IAdminService service) => _service = service;
+    public AdminController(IAdminService service, CampusVisitorDbContext db)
+    {
+        _service = service;
+        _db = db;
+    }
 
     // === Dashboard ===
     [HttpGet("admin/dashboard")]
@@ -63,6 +70,39 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<List<Blacklist>>> GetBlacklist()
         => Ok(await _service.GetBlacklistAsync());
 
+    [HttpPost("blacklist")]
+    public async Task<ActionResult> AddBlacklist([FromBody] AddBlacklistRequest request)
+    {
+        var operatorId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        try
+        {
+            var item = await _service.AddBlacklistAsync(operatorId, request);
+
+            // 记录审计日志
+            _db.AuditLogs.Add(new AuditLog
+            {
+                OperatorId = operatorId,
+                ActionType = "blacklist",
+                ActionDetail = $"手动将 {request.UserName} 加入黑名单",
+                TargetType = "Blacklist",
+                TargetId = item.Id,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Result = "success",
+            });
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = "已加入黑名单" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
     [HttpDelete("blacklist/{id}")]
     public async Task<ActionResult> RemoveBlacklist(int id)
     {
@@ -96,6 +136,14 @@ public class AdminController : ControllerBase
     {
         await _service.DeleteScheduleAsync(id);
         return Ok(new { message = "已删除" });
+    }
+
+    // === Users ===
+    [HttpGet("users")]
+    public async Task<ActionResult<List<User>>> GetUsers()
+    {
+        var users = await _db.Users.Where(u => u.Role == "visitor").Select(u => new { u.Id, u.Name, u.Phone }).ToListAsync();
+        return Ok(users);
     }
 
     // === Audit Logs ===

@@ -2,7 +2,7 @@
   <div class="report-mgmt">
     <h2 class="page-title">举报管理</h2>
 
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" @tab-change="fetchReports">
       <el-tab-pane label="待审核" name="pending" />
       <el-tab-pane label="已通过" name="approved" />
       <el-tab-pane label="已驳回" name="rejected" />

@@ -97,6 +97,12 @@ const routes = [
         component: () => import('@/views/admin/ReportManagement.vue'),
         meta: { title: '举报管理' },
       },
+      {
+        path: 'violations',
+        name: 'ViolationRecords',
+        component: () => import('@/views/admin/ViolationRecords.vue'),
+        meta: { title: '违规记录' },
+      },
     ],
   },
   // ========== 安保端 ==========

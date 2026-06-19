@@ -19,6 +19,7 @@ public interface IAdminService
 
     // Blacklist
     Task<List<Blacklist>> GetBlacklistAsync();
+    Task<Blacklist> AddBlacklistAsync(int operatorId, AddBlacklistRequest request);
     Task RemoveBlacklistAsync(int id);
 
     // Schedules
@@ -102,6 +103,31 @@ public class AdminService : IAdminService
 
     public async Task<List<Blacklist>> GetBlacklistAsync()
         => await _db.Blacklists.Include(b => b.User).Where(b => b.IsActive).ToListAsync();
+
+    public async Task<Blacklist> AddBlacklistAsync(int operatorId, AddBlacklistRequest request)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Name == request.UserName)
+            ?? throw new KeyNotFoundException("未找到该用户");
+
+        var existing = await _db.Blacklists.FirstOrDefaultAsync(b => b.UserId == user.Id && b.IsActive);
+        if (existing != null)
+            throw new InvalidOperationException("该用户已在黑名单中");
+
+        var violationCount = await _db.ViolationRecords.CountAsync(v => v.UserId == user.Id);
+
+        var blacklist = new Blacklist
+        {
+            UserId = user.Id,
+            Reason = request.Reason,
+            ViolationCount = violationCount,
+            BlacklistedAt = DateTime.UtcNow,
+            IsActive = true,
+            OperatorId = operatorId,
+        };
+        _db.Blacklists.Add(blacklist);
+        await _db.SaveChangesAsync();
+        return blacklist;
+    }
 
     public async Task RemoveBlacklistAsync(int id)
     {

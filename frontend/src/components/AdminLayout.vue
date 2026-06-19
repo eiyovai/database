@@ -45,6 +45,10 @@
           <el-icon><ChatDotSquare /></el-icon>
           <template #title>举报管理</template>
         </el-menu-item>
+        <el-menu-item index="/admin/violations">
+          <el-icon><Warning /></el-icon>
+          <template #title>违规记录</template>
+        </el-menu-item>
         <el-menu-item index="/admin/audit-logs">
           <el-icon><Document /></el-icon>
           <template #title>审计日志</template>

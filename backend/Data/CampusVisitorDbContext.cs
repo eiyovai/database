@@ -50,6 +50,8 @@ public class CampusVisitorDbContext : DbContext
             e.HasIndex(r => r.VisitDate);
             e.HasOne(r => r.User).WithMany(u => u.Reservations).HasForeignKey(r => r.UserId);
             e.HasOne(r => r.Reviewer).WithMany().HasForeignKey(r => r.ReviewerId).OnDelete(DeleteBehavior.NoAction);
+            // 禁用 OUTPUT 子句以兼容表上的触发器
+            e.ToTable(tb => tb.UseSqlOutputClause(false));
         });
 
         // ReservationStatusLog
