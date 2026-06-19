@@ -119,15 +119,17 @@
             <div class="status-info">
               <div class="status-item">
                 <span class="label">开放状态</span>
-                <el-tag type="success" effect="dark">今日开放</el-tag>
+                <el-tag :type="campusStatus.isOpen ? 'success' : 'danger'" effect="dark">
+                  {{ campusStatus.isOpen ? '今日开放' : '暂停开放' }}
+                </el-tag>
               </div>
               <div class="status-item">
                 <span class="label">已预约人数</span>
-                <span class="value">156 / 500</span>
+                <span class="value">{{ campusStatus.todayReservations }} / {{ campusStatus.maxCapacity }}</span>
               </div>
               <div class="status-item">
                 <span class="label">在校访客</span>
-                <span class="value">89 人</span>
+                <span class="value">{{ campusStatus.currentVisitors }} 人</span>
               </div>
             </div>
           </el-card>
@@ -138,14 +140,33 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { createReservation } from '@/api/reservation'
+import request from '@/api/request'
 import { ElMessage } from 'element-plus'
 
 const authStore = useAuthStore()
 const formRef = ref(null)
 const submitting = ref(false)
+
+const campusStatus = ref({
+  isOpen: true,
+  todayReservations: 0,
+  currentVisitors: 0,
+  maxCapacity: 500,
+})
+
+async function fetchCampusStatus() {
+  try {
+    const res = await request.get('/public/campus-status')
+    campusStatus.value = res
+  } catch {
+    // 保持默认值
+  }
+}
+
+onMounted(fetchCampusStatus)
 
 const form = reactive({
   name: '',
