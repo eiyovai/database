@@ -1,0 +1,197 @@
+-- ============================================================
+-- 一次性插入所有测试数据（无 GO 分隔符）
+-- ============================================================
+USE [CampusVisitorDB]
+
+-- 1. 用户
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'系统管理员', '13800138000', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'admin', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'张三',       '13800138001', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'visitor', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'李四',       '13800138002', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'visitor', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'王五',       '13800138003', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'visitor', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'赵六',       '13800138004', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'visitor', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'孙七',       '13800138005', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'visitor', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'安保张三',   '13900139001', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'security', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'安保李四',   '13900139002', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'security', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'讲解员小王', '13700137001', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'staff', 1)
+INSERT INTO [dbo].[Users] ([Name], [Phone], [PasswordHash], [Role], [IsActive])
+VALUES (N'志愿者小刘', '13700137002', '$2a$11$K3x5O0qW5Q5Q5Q5Q5Q5Q5e', 'staff', 1)
+
+-- 2. 访客信息
+INSERT INTO [dbo].[Visitors] ([UserId], [IdCard], [Gender], [VisitorType], [Affiliation], [Remarks])
+VALUES (2, '110101199001011234', '男', 'tourist',    NULL,                   N'普通游客')
+INSERT INTO [dbo].[Visitors] ([UserId], [IdCard], [Gender], [VisitorType], [Affiliation], [Remarks])
+VALUES (3, '110101199002021235', '男', 'alumni',     N'计算机学院2012级',    N'校友返校')
+INSERT INTO [dbo].[Visitors] ([UserId], [IdCard], [Gender], [VisitorType], [Affiliation], [Remarks])
+VALUES (4, '110101199103031236', '女', 'parent',     N'学生家长',            N'参加家长会')
+INSERT INTO [dbo].[Visitors] ([UserId], [IdCard], [Gender], [VisitorType], [Affiliation], [Remarks])
+VALUES (5, '110101199204041237', '男', 'study_group', N'光明中学',           N'带队教师')
+INSERT INTO [dbo].[Visitors] ([UserId], [IdCard], [Gender], [VisitorType], [Affiliation], [Remarks])
+VALUES (6, '110101199305051238', '女', 'partner',    N'华为技术有限公司',    N'合作洽谈')
+
+-- 3. 校门
+INSERT INTO [dbo].[Gates] ([Name], [Code], [IsActive])
+VALUES (N'南门（正门）', 'SOUTH', 1)
+INSERT INTO [dbo].[Gates] ([Name], [Code], [IsActive])
+VALUES (N'北门',         'NORTH', 1)
+INSERT INTO [dbo].[Gates] ([Name], [Code], [IsActive])
+VALUES (N'东门',         'EAST',  1)
+INSERT INTO [dbo].[Gates] ([Name], [Code], [IsActive])
+VALUES (N'西门',         'WEST',  0)
+
+-- 4. 校园区域
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'校门广场',     'A01', 'public',     'public',    N'校园入口区域，所有访客可进入')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'主干道',       'A02', 'public',     'public',    N'校园主要道路，所有访客可通行')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'操场/体育馆',  'A03', 'public',     'public',    N'体育运动场所，所有访客可进入')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'图书馆',       'B01', 'academic',   'public',    N'图书馆公共区域')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'校史馆',       'B02', 'public',     'restricted',N'需预约或校友身份进入')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'理工楼实验室', 'C01', 'lab',        'restricted',N'实验室展示区，研学团队与合作单位可进入')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'行政办公楼',   'D01', 'office',     'restricted',N'办公区域，仅合作单位人员可通行')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'学生宿舍区',   'E01', 'living',     'forbidden', N'住宿区域，访客禁止进入')
+INSERT INTO [dbo].[CampusAreas] ([Name], [Code], [Type], [AccessLevel], [Description])
+VALUES (N'科研实验楼',   'C02', 'lab',        'forbidden', N'核心科研区域，禁止访客进入')
+
+-- 5. 区域权限
+INSERT INTO [dbo].[AreaPermissions] ([AreaId], [VisitorType]) VALUES (5, 'alumni')
+INSERT INTO [dbo].[AreaPermissions] ([AreaId], [VisitorType]) VALUES (5, 'study_group')
+INSERT INTO [dbo].[AreaPermissions] ([AreaId], [VisitorType]) VALUES (6, 'study_group')
+INSERT INTO [dbo].[AreaPermissions] ([AreaId], [VisitorType]) VALUES (6, 'partner')
+INSERT INTO [dbo].[AreaPermissions] ([AreaId], [VisitorType]) VALUES (7, 'partner')
+
+-- 6. 开放规则
+INSERT INTO [dbo].[OpenRules] ([DateType], [StartDate], [EndDate], [TimeSlot], [MaxCapacity], [IsActive], [Remark])
+VALUES ('weekday', '2026-06-01', '2026-07-31', 'full_day', 500, 1, N'暑假期间工作日全天开放')
+INSERT INTO [dbo].[OpenRules] ([DateType], [StartDate], [EndDate], [TimeSlot], [MaxCapacity], [IsActive], [Remark])
+VALUES ('weekend', '2026-06-01', '2026-07-31', 'full_day', 800, 1, N'周末开放，容量增加至800')
+INSERT INTO [dbo].[OpenRules] ([DateType], [StartDate], [EndDate], [TimeSlot], [MaxCapacity], [IsActive], [Remark])
+VALUES ('exam',    '2026-06-20', '2026-06-28', 'afternoon', 200, 1, N'考试周限流，仅下午开放')
+INSERT INTO [dbo].[OpenRules] ([DateType], [StartDate], [EndDate], [TimeSlot], [MaxCapacity], [IsActive], [Remark])
+VALUES ('holiday', '2026-07-01', '2026-07-02', 'full_day', 300, 0, N'建党节活动，暂未启用')
+
+-- 7. 预约数据
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (2, 'R202606190001', 'tourist',    N'张三', '13800138001', '2026-06-22', 'morning',   2, '4h',     N'带孩子参观校园，了解学校环境',     'approved',    1, N'审核通过', '2026-06-19 09:00:00', '2026-06-18 14:30:00')
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (3, 'R202606190002', 'alumni',     N'李四', '13800138002', '2026-06-23', 'afternoon', 0, 'half_day', N'回母校参观，想去校史馆看看',       'pending',    NULL, NULL, NULL, '2026-06-19 10:00:00')
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (4, 'R202606190003', 'parent',     N'王五', '13800138003', '2026-06-22', 'morning',   1, '2h',     N'参加家长开放日活动',               'approved',    1, N'审核通过', '2026-06-19 09:30:00', '2026-06-18 16:00:00')
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (5, 'R202606190004', 'study_group', N'赵六', '13800138004', '2026-06-24', 'full_day',  15, 'full_day', N'带领光明中学研学团队参观实验室',   'pending',    NULL, NULL, NULL, '2026-06-19 11:00:00')
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (6, 'R202606190005', 'partner',    N'孙七', '13800138005', '2026-06-22', 'morning',   2, '4h',     N'与合作单位洽谈项目合作',           'approved',    1, N'审核通过', '2026-06-19 08:00:00', '2026-06-17 09:00:00')
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (2, 'R202606190006', 'tourist',    N'张三', '13800138001', '2026-06-20', 'afternoon', 0, '2h',     N'测试预约-已取消',                  'cancelled', 1, NULL, '2026-06-19 10:00:00', '2026-06-19 08:00:00')
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (3, 'R202606190007', 'alumni',     N'李四', '13800138002', '2026-06-19', 'morning',   0, 'half_day', N'校友返校日',                      'checked_in', 1, N'审核通过', '2026-06-18 09:00:00', '2026-06-17 10:00:00')
+INSERT INTO [dbo].[Reservations] ([UserId], [ReservationNo], [VisitorType], [VisitorName], [VisitorPhone], [VisitDate], [TimeSlot], [Companions], [StayDuration], [Purpose], [Status], [ReviewerId], [ReviewRemark], [ReviewedAt], [CreatedAt])
+VALUES (4, 'R202606190008', 'parent',     N'王五', '13800138003', '2026-06-18', 'morning',   1, '2h',     N'已离校记录',                      'checked_out',1, N'审核通过', '2026-06-17 09:00:00', '2026-06-16 14:00:00')
+
+-- 8. 状态变更日志
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (1, 'pending',  'approved',   1, N'审核通过',   '2026-06-19 09:00:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (3, 'pending',  'approved',   1, N'审核通过',   '2026-06-19 09:30:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (5, 'pending',  'approved',   1, N'审核通过',   '2026-06-19 08:00:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (6, 'pending',  'cancelled',  2, N'用户取消预约','2026-06-19 10:00:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (7, 'pending',  'approved',   1, N'审核通过',   '2026-06-18 09:00:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (7, 'approved', 'checked_in', 7, N'南门入校核验','2026-06-19 08:30:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (8, 'pending',  'approved',   1, N'审核通过',   '2026-06-17 09:00:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (8, 'approved', 'checked_in', 7, N'南门入校核验','2026-06-18 08:15:00')
+INSERT INTO [dbo].[ReservationStatusLog] ([ReservationId], [FromStatus], [ToStatus], [OperatorId], [Remark], [CreatedAt])
+VALUES (8, 'checked_in', 'checked_out', 7, N'北门离校登记','2026-06-18 11:30:00')
+
+-- 9. 出入校记录
+INSERT INTO [dbo].[EntryExitRecords] ([ReservationId], [UserId], [EntryTime], [EntryGateId], [ExitTime], [ExitGateId], [OperatorId])
+VALUES (7, 3, '2026-06-19 08:30:00', 1, NULL, NULL, 7)
+INSERT INTO [dbo].[EntryExitRecords] ([ReservationId], [UserId], [EntryTime], [EntryGateId], [ExitTime], [ExitGateId], [OperatorId])
+VALUES (8, 4, '2026-06-18 08:15:00', 1, '2026-06-18 11:30:00', 2, 7)
+
+-- 10. 活动
+INSERT INTO [dbo].[Activities] ([Title], [Location], [Description], [StartTime], [EndTime], [MaxParticipants], [CurrentCount], [Status], [ContactPerson], [ContactPhone], [CreatedBy])
+VALUES (N'校史馆公益讲解', N'校史馆', N'由专业讲解员带领参观校史馆，深入了解学校百年发展历程。', '2026-06-22 10:00', '2026-06-22 11:30', 50, 25, 'open', N'讲解员小王', '13700137001', 1)
+INSERT INTO [dbo].[Activities] ([Title], [Location], [Description], [StartTime], [EndTime], [MaxParticipants], [CurrentCount], [Status], [ContactPerson], [ContactPhone], [CreatedBy])
+VALUES (N'实验室开放参观', N'理工楼A座3楼', N'参观最新科研实验室，体验前沿科技设备，与科研人员面对面交流。', '2026-06-23 14:00', '2026-06-23 16:00', 50, 45, 'open', N'志愿者小刘', '13700137002', 1)
+INSERT INTO [dbo].[Activities] ([Title], [Location], [Description], [StartTime], [EndTime], [MaxParticipants], [CurrentCount], [Status], [ContactPerson], [ContactPhone], [CreatedBy])
+VALUES (N'招生宣讲会', N'学术报告厅', N'招生办老师现场解答报考相关问题，了解最新招生政策。', '2026-06-25 09:00', '2026-06-25 11:00', 200, 120, 'open', N'系统管理员', '13800138000', 1)
+INSERT INTO [dbo].[Activities] ([Title], [Location], [Description], [StartTime], [EndTime], [MaxParticipants], [CurrentCount], [Status], [ContactPerson], [ContactPhone], [CreatedBy])
+VALUES (N'社团展示活动', N'操场', N'各大学生社团现场展示，体验丰富多彩的校园文化。', '2026-06-28 09:00', '2026-06-28 16:00', 500, 0, 'open', N'系统管理员', '13800138000', 1)
+
+-- 11. 活动报名
+INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId], [UserId], [VisitorName], [VisitorPhone], [Companions], [Status])
+VALUES (1, 2, N'张三', '13800138001', 2, 'registered')
+INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId], [UserId], [VisitorName], [VisitorPhone], [Companions], [Status])
+VALUES (1, 3, N'李四', '13800138002', 0, 'registered')
+INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId], [UserId], [VisitorName], [VisitorPhone], [Companions], [Status])
+VALUES (2, 2, N'张三', '13800138001', 1, 'registered')
+INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId], [UserId], [VisitorName], [VisitorPhone], [Companions], [Status])
+VALUES (2, 4, N'王五', '13800138003', 0, 'registered')
+INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId], [UserId], [VisitorName], [VisitorPhone], [Companions], [Status])
+VALUES (3, 2, N'张三', '13800138001', 0, 'registered')
+INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId], [UserId], [VisitorName], [VisitorPhone], [Companions], [Status])
+VALUES (3, 3, N'李四', '13800138002', 0, 'registered')
+INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId], [UserId], [VisitorName], [VisitorPhone], [Companions], [Status])
+VALUES (3, 5, N'赵六', '13800138004', 15, 'registered')
+
+-- 12. 违规记录
+INSERT INTO [dbo].[ViolationRecords] ([UserId], [ViolationType], [Description], [OccurredAt], [Location], [Severity], [SourceType])
+VALUES (2, 'no_show',  N'预约2026-06-15上午时段未到校', '2026-06-15', NULL, 'minor', 'system')
+INSERT INTO [dbo].[ViolationRecords] ([UserId], [ViolationType], [Description], [OccurredAt], [Location], [Severity], [SourceType])
+VALUES (5, 'overstay', N'超时滞留2小时',                '2026-06-16', N'理工楼', 'major', 'manual')
+
+-- 13. 黑名单
+INSERT INTO [dbo].[Blacklist] ([UserId], [Reason], [ViolationCount], [BlacklistedAt], [ExpiresAt], [IsActive], [OperatorId])
+VALUES (5, N'累计爽约2次 + 超时滞留1次', 3, '2026-06-17 14:00:00', '2026-09-17 14:00:00', 1, 1)
+
+-- 14. 举报
+INSERT INTO [dbo].[Reports] ([ReporterId], [TargetName], [ViolationType], [Location], [OccurredAt], [Description], [Status])
+VALUES (1, N'外来人员', 'trespass', N'理工楼B座3楼实验室', '2026-06-18 14:20', N'发现一名非校园人员在实验室区域附近徘徊，疑似试图进入封闭区域。', 'pending')
+
+-- 15. 排班
+INSERT INTO [dbo].[StaffSchedules] ([StaffId], [StaffRole], [WorkDate], [Shift], [StartTime], [EndTime], [Location], [Task], [CreatedBy])
+VALUES (9,  'guide',    '2026-06-22', 'morning',  '08:00', '12:00', N'校史馆',   N'校史馆公益讲解', 1)
+INSERT INTO [dbo].[StaffSchedules] ([StaffId], [StaffRole], [WorkDate], [Shift], [StartTime], [EndTime], [Location], [Task], [CreatedBy])
+VALUES (10, 'volunteer', '2026-06-22', 'morning', '08:00', '12:00', N'校门广场', N'访客引导和接待', 1)
+INSERT INTO [dbo].[StaffSchedules] ([StaffId], [StaffRole], [WorkDate], [Shift], [StartTime], [EndTime], [Location], [Task], [CreatedBy])
+VALUES (10, 'volunteer', '2026-06-22', 'afternoon', '12:00', '16:00', N'主干道', N'校园导览', 1)
+INSERT INTO [dbo].[StaffSchedules] ([StaffId], [StaffRole], [WorkDate], [Shift], [StartTime], [EndTime], [Location], [Task], [CreatedBy])
+VALUES (7,  'security',  '2026-06-22', 'full_day', '08:00', '17:00', N'南门',    N'入校核验及安保', 1)
+INSERT INTO [dbo].[StaffSchedules] ([StaffId], [StaffRole], [WorkDate], [Shift], [StartTime], [EndTime], [Location], [Task], [CreatedBy])
+VALUES (8,  'security',  '2026-06-22', 'full_day', '08:00', '17:00', N'北门',    N'入校核验及安保', 1)
+INSERT INTO [dbo].[StaffSchedules] ([StaffId], [StaffRole], [WorkDate], [Shift], [StartTime], [EndTime], [Location], [Task], [CreatedBy])
+VALUES (9,  'guide',     '2026-06-23', 'afternoon', '12:00', '16:00', N'理工楼', N'实验室讲解', 1)
+
+-- 16. 审计日志
+INSERT INTO [dbo].[AuditLogs] ([OperatorId], [ActionType], [ActionDetail], [TargetType], [TargetId], [IpAddress], [Result], [CreatedAt])
+VALUES (1, 'review',    N'审核通过预约R202606190001', 'Reservation', 1, '192.168.1.100', 'success', '2026-06-19 09:00:00')
+INSERT INTO [dbo].[AuditLogs] ([OperatorId], [ActionType], [ActionDetail], [TargetType], [TargetId], [IpAddress], [Result], [CreatedAt])
+VALUES (1, 'review',    N'审核通过预约R202606190003', 'Reservation', 3, '192.168.1.100', 'success', '2026-06-19 09:30:00')
+INSERT INTO [dbo].[AuditLogs] ([OperatorId], [ActionType], [ActionDetail], [TargetType], [TargetId], [IpAddress], [Result], [CreatedAt])
+VALUES (1, 'config',    N'修改开放规则-周末最大容量调整为800', 'OpenRule', 2, '192.168.1.100', 'success', '2026-06-18 15:00:00')
+INSERT INTO [dbo].[AuditLogs] ([OperatorId], [ActionType], [ActionDetail], [TargetType], [TargetId], [IpAddress], [Result], [CreatedAt])
+VALUES (1, 'blacklist', N'将赵六加入黑名单',           'Blacklist',   1, '192.168.1.100', 'success', '2026-06-17 14:00:00')
+INSERT INTO [dbo].[AuditLogs] ([OperatorId], [ActionType], [ActionDetail], [TargetType], [TargetId], [IpAddress], [Result], [CreatedAt])
+VALUES (7, 'other',     N'南门入校核验-张三',           'EntryExit',  7, '192.168.1.101', 'success', '2026-06-19 08:30:00')
+
+PRINT N'所有测试数据插入完成！'
