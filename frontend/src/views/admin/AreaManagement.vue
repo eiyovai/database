@@ -22,7 +22,7 @@
         </el-table-column>
         <el-table-column label="允许访客类型" min-width="180">
           <template #default="{ row }">
-            <el-tag v-for="t in row.allowedTypes" :key="t" size="small" style="margin-right: 4px">
+            <el-tag v-for="t in (row.areaPermissions?.map(p => p.visitorType) || row.allowedTypes || [])" :key="t" size="small" style="margin-right: 4px">
               {{ typeMap[t] }}
             </el-tag>
           </template>
@@ -117,13 +117,13 @@ async function fetchAreas() {
 
 function showDialog(row) {
   isEdit.value = !!row
-  Object.assign(form, row || { name: '', code: '', type: 'public', accessLevel: 'public', allowedTypes: [], description: '' })
+  Object.assign(form, row ? { ...row, allowedTypes: row.areaPermissions?.map(p => p.visitorType) || row.allowedTypes || [] } : { name: '', code: '', type: 'public', accessLevel: 'public', allowedTypes: [], description: '' })
   dialogVisible.value = true
 }
 
 async function handleSaveArea() {
   try {
-    await saveAreaApi({ ...form })
+    await saveAreaApi({ ...form, allowedTypes: form.allowedTypes })
     ElMessage.success(isEdit.value ? '区域已更新' : '区域已创建')
     dialogVisible.value = false
     await fetchAreas()

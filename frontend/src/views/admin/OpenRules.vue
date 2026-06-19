@@ -67,8 +67,8 @@
         <el-form-item label="最大接待量" prop="maxCapacity">
           <el-input-number v-model="form.maxCapacity" :min="0" :max="10000" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-switch v-model="form.status" active-value="active" inactive-value="inactive" />
+        <el-form-item label="状态">
+          <el-switch v-model="form.isActive" :active-value="true" :inactive-value="false" />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
@@ -100,7 +100,7 @@ const initForm = () => ({
   endDate: '',
   timeSlot: 'all_day',
   maxCapacity: 500,
-  status: 'active',
+  isActive: true,
   remark: '',
 })
 
