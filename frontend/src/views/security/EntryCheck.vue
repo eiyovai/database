@@ -32,7 +32,7 @@
           <div v-if="searchResult" class="check-result">
             <el-divider />
             <el-descriptions :column="2" border size="small">
-              <el-descriptions-item label="姓名">{{ searchResult.name }}</el-descriptions-item>
+              <el-descriptions-item label="姓名">{{ searchResult.visitorName }}</el-descriptions-item>
               <el-descriptions-item label="访客类型">{{ typeMap[searchResult.visitorType] }}</el-descriptions-item>
               <el-descriptions-item label="入校日期">{{ searchResult.visitDate }}</el-descriptions-item>
               <el-descriptions-item label="时段">{{ timeSlotMap[searchResult.timeSlot] }}</el-descriptions-item>
@@ -100,7 +100,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { entryCheck, getEntryExitRecords } from '@/api/entryexit'
+import { searchReservation, entryCheck, getEntryExitRecords } from '@/api/entryexit'
 import { ElMessage } from 'element-plus'
 
 const query = ref('')
@@ -115,6 +115,17 @@ const statusType = (s) => ({ pending: 'warning', approved: 'success', checked_in
 
 const recentEntries = ref([])
 
+// 将后端 PascalCase 转为前端 camelCase
+function toCamelCase(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  const result = {}
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
+    result[camelKey] = value
+  }
+  return result
+}
+
 async function handleSearch() {
   if (!query.value.trim()) {
     ElMessage.warning('请输入查询条件')
@@ -122,14 +133,11 @@ async function handleSearch() {
   }
   searching.value = true
   try {
-    const res = await entryCheck({ query: query.value })
-    searchResult.value = res
+    const res = await searchReservation({ Query: query.value })
+    searchResult.value = toCamelCase(res)
   } catch {
-    // 模拟数据
-    searchResult.value = {
-      id: 'R20260601', name: '张三', visitorType: 'tourist', visitDate: '2026-06-22',
-      timeSlot: 'morning', companions: 2, status: 'approved',
-    }
+    ElMessage.error('未找到匹配的预约记录')
+    searchResult.value = null
   } finally {
     searching.value = false
   }
@@ -139,7 +147,7 @@ async function handleEntry() {
   checking.value = true
   try {
     await entryCheck({ id: searchResult.value.id, gate: '南门' })
-    ElMessage.success(`${searchResult.value.name} 已成功入校`)
+    ElMessage.success(`${searchResult.value.visitorName || searchResult.value.name} 已成功入校`)
     searchResult.value = null
     query.value = ''
     await fetchRecent()
@@ -152,8 +160,16 @@ async function handleEntry() {
 
 async function fetchRecent() {
   try {
-    const res = await getEntryExitRecords({ type: 'entry', pageSize: 5 })
-    recentEntries.value = res.items || res
+    const res = await getEntryExitRecords({ page: 1, pageSize: 5 })
+    const items = Array.isArray(res) ? res : (res.items || [])
+    recentEntries.value = items.map(r => {
+      const c = toCamelCase(r)
+      return {
+        name: c.reservation?.visitorName || c.visitorName || '未知',
+        gate: c.entryGate?.name || '未知',
+        time: c.entryTime ? new Date(c.entryTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--',
+      }
+    })
   } catch {
     recentEntries.value = [
       { name: '张三', gate: '南门', time: '09:15' },

@@ -1,5 +1,10 @@
 import request from './request'
 
+// 查询预约（安保搜索）
+export function searchReservation(data) {
+  return request.post('/entry-exit/search', data)
+}
+
 // 入校核验（安保）
 export function entryCheck(data) {
   return request.post('/entry-exit/entry', data)

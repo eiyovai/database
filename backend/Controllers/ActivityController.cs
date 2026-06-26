@@ -39,8 +39,19 @@ public class ActivityController : ControllerBase
     public async Task<ActionResult> Register([FromBody] RegisterActivityRequest request)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        await _service.RegisterAsync(userId, request);
-        return Ok(new { message = "报名成功" });
+        try
+        {
+            await _service.RegisterAsync(userId, request);
+            return Ok(new { message = "报名成功" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
     [Authorize]
@@ -90,5 +101,14 @@ public class ActivityController : ControllerBase
     {
         await _service.CheckInAsync(registrationId);
         return Ok(new { message = "签到成功" });
+    }
+
+    [Authorize]
+    [HttpPut("registrations/{registrationId}/cancel")]
+    public async Task<ActionResult> CancelRegistration(int registrationId)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _service.CancelRegistrationAsync(userId, registrationId);
+        return Ok(new { message = "报名已取消" });
     }
 }

@@ -5,6 +5,7 @@ using CampusVisitorApi.Models;
 using CampusVisitorApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampusVisitorApi.Controllers;
 
@@ -62,7 +63,7 @@ public class ReservationController : ControllerBase
         _db.AuditLogs.Add(new AuditLog
         {
             OperatorId = userId,
-            ActionType = "user",
+            ActionType = "other",
             ActionDetail = $"取消预约：ID={id}",
             TargetType = "Reservation",
             TargetId = id,
@@ -83,6 +84,23 @@ public class ReservationController : ControllerBase
     {
         var result = await _service.GetListAsync(status, page, pageSize);
         return Ok(result);
+    }
+
+    [HttpGet("stats")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult> GetStats([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        var query = _db.Reservations.AsQueryable();
+        if (startDate.HasValue) query = query.Where(r => r.VisitDate >= startDate.Value);
+        if (endDate.HasValue) query = query.Where(r => r.VisitDate <= endDate.Value);
+
+        var total = await query.CountAsync();
+        var approved = await query.CountAsync(r => r.Status == "approved");
+        var pending = await query.CountAsync(r => r.Status == "pending");
+        var checkedIn = await query.CountAsync(r => r.Status == "checked_in");
+        var cancelled = await query.CountAsync(r => r.Status == "cancelled" || r.Status == "rejected");
+
+        return Ok(new { total, approved, pending, checkedIn, cancelled });
     }
 
     [HttpPut("{id}/review")]

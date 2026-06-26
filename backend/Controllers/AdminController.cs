@@ -125,9 +125,20 @@ public class AdminController : ControllerBase
     [HttpPut("schedules/{id}")]
     public async Task<ActionResult> UpdateSchedule(int id, [FromBody] CreateScheduleRequest request)
     {
-        // Simplified: delete + recreate
-        await _service.DeleteScheduleAsync(id);
-        await _service.CreateScheduleAsync(request);
+        var schedule = await _db.StaffSchedules.FindAsync(id);
+        if (schedule == null) return NotFound(new { message = "排班不存在" });
+
+        var staff = await _db.Users.FirstOrDefaultAsync(u => u.Name == request.StaffName && u.Role == "staff");
+        if (staff == null) return NotFound(new { message = "未找到该工作人员" });
+
+        schedule.StaffId = staff.Id;
+        schedule.StaffRole = request.StaffRole;
+        schedule.WorkDate = request.WorkDate;
+        schedule.Shift = request.Shift;
+        schedule.Location = request.Location;
+        schedule.Task = request.Task;
+        schedule.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
         return Ok(new { message = "排班已更新" });
     }
 

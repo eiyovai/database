@@ -12,17 +12,17 @@ export function getActivityDetail(id) {
 
 // 报名活动
 export function registerActivity(data) {
-  return request.post('/activity-registrations', data)
+  return request.post('/activities/register', data)
 }
 
 // 获取我的报名列表
 export function getMyRegistrations(params) {
-  return request.get('/activity-registrations/my', { params })
+  return request.get('/activities/my-registrations', { params })
 }
 
 // 取消报名
 export function cancelRegistration(id) {
-  return request.put(`/activity-registrations/${id}/cancel`)
+  return request.put(`/activities/registrations/${id}/cancel`)
 }
 
 // === 管理员接口 ===
@@ -49,5 +49,5 @@ export function deleteActivity(id) {
 
 // 签到
 export function checkInRegistration(id) {
-  return request.put(`/activity-registrations/${id}/checkin`)
+  return request.put(`/activities/checkin/${id}`)
 }

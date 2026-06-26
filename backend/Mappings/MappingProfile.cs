@@ -15,11 +15,17 @@ public class MappingProfile : Profile
         CreateMap<CreateReservationRequest, Reservation>();
         CreateMap<Reservation, ReservationListResponse>()
             .ForMember(d => d.EntryTime, o => o.MapFrom(s =>
-                s.EntryExitRecords.FirstOrDefault(r => r.EntryTime != null)!.EntryTime))
+                s.EntryExitRecords.FirstOrDefault(r => r.EntryTime != null) != null
+                    ? s.EntryExitRecords.FirstOrDefault(r => r.EntryTime != null)!.EntryTime
+                    : (DateTime?)null))
             .ForMember(d => d.ExitTime, o => o.MapFrom(s =>
-                s.EntryExitRecords.FirstOrDefault(r => r.ExitTime != null)!.ExitTime))
+                s.EntryExitRecords.FirstOrDefault(r => r.ExitTime != null) != null
+                    ? s.EntryExitRecords.FirstOrDefault(r => r.ExitTime != null)!.ExitTime
+                    : (DateTime?)null))
             .ForMember(d => d.EntryGate, o => o.MapFrom(s =>
-                s.EntryExitRecords.FirstOrDefault(r => r.EntryGate != null)!.EntryGate!.Name));
+                s.EntryExitRecords.FirstOrDefault(r => r.EntryGate != null) != null
+                    ? s.EntryExitRecords.FirstOrDefault(r => r.EntryGate != null)!.EntryGate!.Name
+                    : null));
 
         // Activity
         CreateMap<Activity, ActivityListResponse>()

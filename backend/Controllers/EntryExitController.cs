@@ -64,4 +64,11 @@ public class EntryExitController : ControllerBase
     {
         return Ok(await _service.GetCurrentVisitorsAsync());
     }
+
+    [HttpGet("records")]
+    public async Task<ActionResult<List<EntryExitRecord>>> GetRecords(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        return Ok(await _service.GetRecordsAsync(page, pageSize));
+    }
 }
