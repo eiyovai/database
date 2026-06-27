@@ -20,6 +20,10 @@ public interface IActivityService
     Task UpdateAsync(int id, CreateActivityRequest request);
     Task DeleteAsync(int id);
     Task CheckInAsync(int registrationId);
+    Task<List<ActivityRegistrationResponse>> GetAllPendingRegistrationsAsync();
+    Task<List<ActivityRegistrationResponse>> GetPendingRegistrationsAsync(int activityId);
+    Task ApproveRegistrationAsync(int registrationId);
+    Task RejectRegistrationAsync(int registrationId);
 }
 
 public class ActivityService : IActivityService
@@ -74,14 +78,72 @@ public class ActivityService : IActivityService
             UserId = userId,
             VisitorName = user.Name,
             VisitorPhone = user.Phone,
+            Status = "pending",   // 待审核
         };
 
-        activity.CurrentCount++;
         _db.ActivityRegistrations.Add(registration);
+        await _db.SaveChangesAsync();
+    }
 
-        // 自动创建关联的入校预约（报名活动即获得入校资格）
+    public async Task<List<ActivityRegistrationResponse>> GetAllPendingRegistrationsAsync()
+    {
+        return await _db.ActivityRegistrations
+            .Include(r => r.User)
+            .Include(r => r.Activity)
+            .Where(r => r.Status == "pending")
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new ActivityRegistrationResponse
+            {
+                Id = r.Id,
+                ActivityId = r.ActivityId,
+                ActivityTitle = r.Activity.Title,
+                UserId = r.UserId,
+                VisitorName = r.VisitorName,
+                VisitorPhone = r.VisitorPhone,
+                Status = r.Status,
+                CreatedAt = r.CreatedAt,
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<ActivityRegistrationResponse>> GetPendingRegistrationsAsync(int activityId)
+    {
+        return await _db.ActivityRegistrations
+            .Include(r => r.User)
+            .Where(r => r.ActivityId == activityId && r.Status == "pending")
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new ActivityRegistrationResponse
+            {
+                Id = r.Id,
+                ActivityId = r.ActivityId,
+                UserId = r.UserId,
+                VisitorName = r.VisitorName,
+                VisitorPhone = r.VisitorPhone,
+                Status = r.Status,
+                CreatedAt = r.CreatedAt,
+            })
+            .ToListAsync();
+    }
+
+    public async Task ApproveRegistrationAsync(int registrationId)
+    {
+        var reg = await _db.ActivityRegistrations
+            .Include(r => r.Activity)
+            .FirstOrDefaultAsync(r => r.Id == registrationId)
+            ?? throw new KeyNotFoundException("报名记录不存在");
+
+        if (reg.Status != "pending")
+            throw new InvalidOperationException("该报名已处理");
+
+        var activity = reg.Activity;
+
+        // 审核通过：递增人数
+        activity.CurrentCount++;
+        reg.Status = "registered";
+
+        // 自动创建关联的入校预约
         var alreadyHasReservation = await _db.Reservations
-            .AnyAsync(r => r.UserId == userId && r.VisitDate == activity.StartTime.Date
+            .AnyAsync(r => r.UserId == reg.UserId && r.VisitDate == activity.StartTime.Date
                 && r.Status != "cancelled" && r.Status != "rejected");
         if (!alreadyHasReservation)
         {
@@ -98,34 +160,45 @@ public class ActivityService : IActivityService
                     seq = int.Parse(last[^4..]) + 1;
             }
 
-            // 根据活动时间推算时段
             var hour = activity.StartTime.Hour;
             var timeSlot = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "full_day";
 
-            // 获取访客类型
-            var visitor = await _db.Visitors.FirstOrDefaultAsync(v => v.UserId == userId);
+            var user = await _db.Users.FindAsync(reg.UserId);
+            var visitor = await _db.Visitors.FirstOrDefaultAsync(v => v.UserId == reg.UserId);
             var visitorType = visitor?.VisitorType ?? "tourist";
 
             var reservation = new Reservation
             {
-                UserId = userId,
+                UserId = reg.UserId,
                 ReservationNo = $"R{DateTime.Now:yyyyMMdd}{seq:D4}",
                 VisitorType = visitorType,
-                VisitorName = user.Name,
-                VisitorPhone = user.Phone,
+                VisitorName = reg.VisitorName,
+                VisitorPhone = reg.VisitorPhone,
                 VisitDate = activity.StartTime.Date,
                 TimeSlot = timeSlot,
                 Companions = 0,
                 StayDuration = "activity",
                 Purpose = $"参加活动：{activity.Title}",
-                Status = "approved",       // 报名活动自动通过
-                ReviewerId = 1,            // 系统自动审核
+                Status = "approved",
+                ReviewerId = 1,
                 ReviewedAt = DateTime.UtcNow,
             };
 
             _db.Reservations.Add(reservation);
         }
 
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task RejectRegistrationAsync(int registrationId)
+    {
+        var reg = await _db.ActivityRegistrations.FindAsync(registrationId)
+            ?? throw new KeyNotFoundException("报名记录不存在");
+
+        if (reg.Status != "pending")
+            throw new InvalidOperationException("该报名已处理");
+
+        reg.Status = "rejected";
         await _db.SaveChangesAsync();
     }
 

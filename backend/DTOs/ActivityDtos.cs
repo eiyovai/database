@@ -26,3 +26,15 @@ public class ActivityListResponse
     public int Registered { get; set; }
     public int MaxParticipants { get; set; }
 }
+
+public class ActivityRegistrationResponse
+{
+    public int Id { get; set; }
+    public int ActivityId { get; set; }
+    public string ActivityTitle { get; set; } = string.Empty;
+    public int UserId { get; set; }
+    public string VisitorName { get; set; } = string.Empty;
+    public string VisitorPhone { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}

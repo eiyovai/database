@@ -181,7 +181,7 @@ CREATE TABLE [dbo].[ActivityRegistrations] (
     [VisitorName] NVARCHAR(50) NOT NULL,
     [VisitorPhone] VARCHAR(20) NOT NULL,
     [Companions] INT NOT NULL DEFAULT 0,
-    [Status] VARCHAR(20) NOT NULL DEFAULT 'registered' CHECK ([Status] IN ('registered','cancelled','checked_in','absent')),
+    [Status] VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK ([Status] IN ('pending','registered','rejected','cancelled','checked_in','absent')),
     [CheckedInAt] DATETIME2 NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
     CONSTRAINT [FK_AR_Activities] FOREIGN KEY ([ActivityId]) REFERENCES [dbo].[Activities]([Id]),

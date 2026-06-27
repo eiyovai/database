@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CampusVisitorApi.Data;
 using CampusVisitorApi.DTOs;
 using CampusVisitorApi.Models;
@@ -78,7 +79,16 @@ public class AdminController : ControllerBase
     [HttpDelete("blacklist/{id}")]
     public async Task<ActionResult> RemoveBlacklist(int id)
     {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await _service.RemoveBlacklistAsync(id);
+        _db.AuditLogs.Add(new AuditLog
+        {
+            OperatorId = userId, ActionType = "update",
+            ActionDetail = $"移出黑名单：BlacklistId={id}",
+            TargetType = "Blacklist", TargetId = id,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(), Result = "success",
+        });
+        await _db.SaveChangesAsync();
         return Ok(new { message = "已移出黑名单" });
     }
 

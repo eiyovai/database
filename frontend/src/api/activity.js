@@ -48,6 +48,31 @@ export function deleteActivity(id) {
 }
 
 // 签到
+export function checkIn(registrationId) {
+  return request.put(`/activities/checkin/${registrationId}`)
+}
+
+// === 报名审核 ===
+
+// 获取所有待审核报名列表
+export function getAllPendingRegistrations() {
+  return request.get('/activities/registrations/pending')
+}
+
+// 获取活动的待审核报名列表
+export function getActivityRegistrations(activityId) {
+  return request.get(`/activities/${activityId}/registrations`)
+}
+
+// 通过报名
+export function approveRegistration(registrationId) {
+  return request.put(`/activities/registrations/${registrationId}/approve`)
+}
+
+// 拒绝报名
+export function rejectRegistration(registrationId) {
+  return request.put(`/activities/registrations/${registrationId}/reject`)
+}
 export function checkInRegistration(id) {
   return request.put(`/activities/checkin/${id}`)
 }

@@ -224,6 +224,11 @@ async function handleSubmit() {
 function resetForm() {
   formRef.value.resetFields()
   form.companions = 0
+  // 重置后重新填充登录用户的姓名和手机号（禁用状态下无法手动填写）
+  if (authStore.isLoggedIn && authStore.userInfo) {
+    form.name = authStore.userInfo.name || ''
+    form.phone = authStore.userInfo.phone || ''
+  }
 }
 </script>
 

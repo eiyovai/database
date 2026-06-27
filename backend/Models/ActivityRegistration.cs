@@ -21,7 +21,7 @@ public class ActivityRegistration
     public int Companions { get; set; } = 0;
 
     [Required, MaxLength(20)]
-    public string Status { get; set; } = "registered";
+    public string Status { get; set; } = "pending";
 
     public DateTime? CheckedInAt { get; set; }
 

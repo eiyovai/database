@@ -112,6 +112,15 @@ public class ReportController : ControllerBase
             }
         }
 
+        var statusText = request.Status == "approved" ? "审核通过" : "审核驳回";
+        _db.AuditLogs.Add(new AuditLog
+        {
+            OperatorId = reviewerId, ActionType = "review",
+            ActionDetail = $"{statusText}举报：{report.TargetName}（{report.ViolationType}）",
+            TargetType = "Report", TargetId = report.Id,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(), Result = "success",
+        });
+
         await _db.SaveChangesAsync();
         return Ok(new { message = "审核完成" });
     }

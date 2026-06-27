@@ -23,14 +23,35 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right" align="center">
+        <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" text @click="showDialog(row)">编辑</el-button>
+            <el-button type="success" size="small" text @click="showRegistrations(row)">报名审核</el-button>
             <el-button type="danger" size="small" text @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 报名审核弹窗 -->
+    <el-dialog v-model="regDialogVisible" :title="'报名审核 - ' + currentActivity?.title" width="700px">
+      <el-table :data="registrations" stripe v-loading="regLoading">
+        <el-table-column label="姓名" width="100">
+          <template #default="{ row }">{{ row.visitorName }}</template>
+        </el-table-column>
+        <el-table-column label="手机号" width="130" prop="visitorPhone" />
+        <el-table-column label="报名时间" width="160">
+          <template #default="{ row }">{{ row.createdAt }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" align="center">
+          <template #default="{ row }">
+            <el-button type="success" size="small" @click="handleApprove(row)">通过</el-button>
+            <el-button type="danger" size="small" @click="handleReject(row)">拒绝</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-if="!registrations.length && !regLoading" style="text-align:center;padding:40px;color:#999">暂无待审核的报名</div>
+    </el-dialog>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑活动' : '发布活动'" width="600px">
       <el-form ref="formRef" :model="form" label-width="100px">
@@ -63,13 +84,17 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { getActivityList, createActivity, updateActivity, deleteActivity } from '@/api/activity'
+import { getActivityList, createActivity, updateActivity, deleteActivity, getActivityRegistrations, approveRegistration, rejectRegistration } from '@/api/activity'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const activities = ref([])
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref(null)
+const regDialogVisible = ref(false)
+const regLoading = ref(false)
+const currentActivity = ref(null)
+const registrations = ref([])
 
 const form = reactive({
   title: '', location: '', startTime: '', endTime: '', maxParticipants: 100, description: '',
@@ -109,6 +134,39 @@ async function handleDelete(row) {
     await deleteActivity(row.id)
     ElMessage.success('活动已删除')
     await fetchActivities()
+  } catch {}
+}
+
+async function showRegistrations(activity) {
+  currentActivity.value = activity
+  regDialogVisible.value = true
+  regLoading.value = true
+  try {
+    const res = await getActivityRegistrations(activity.id)
+    registrations.value = res.items || res || []
+  } catch {
+    registrations.value = []
+  } finally {
+    regLoading.value = false
+  }
+}
+
+async function handleApprove(row) {
+  try {
+    await ElMessageBox.confirm(`确定通过 ${row.visitorName} 的报名？`, '确认')
+    await approveRegistration(row.id)
+    ElMessage.success('报名已通过')
+    await showRegistrations(currentActivity.value)
+    await fetchActivities()
+  } catch {}
+}
+
+async function handleReject(row) {
+  try {
+    await ElMessageBox.confirm(`确定拒绝 ${row.visitorName} 的报名？`, '确认')
+    await rejectRegistration(row.id)
+    ElMessage.success('报名已拒绝')
+    await showRegistrations(currentActivity.value)
   } catch {}
 }
 
