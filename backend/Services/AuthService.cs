@@ -32,6 +32,17 @@ public class AuthService : IAuthService
         if (!user.IsActive)
             throw new UnauthorizedAccessException("账户已被禁用");
 
+        // 检查是否在黑名单中
+        var blacklisted = await _db.Blacklists
+            .AnyAsync(b => b.UserId == user.Id && b.IsActive && b.ExpiresAt > DateTime.UtcNow);
+        if (blacklisted)
+        {
+            var bl = await _db.Blacklists
+                .FirstAsync(b => b.UserId == user.Id && b.IsActive);
+            throw new UnauthorizedAccessException(
+                $"您已被列入黑名单，截止 {bl.ExpiresAt:yyyy-MM-dd} 前不可使用本系统。原因：{bl.Reason}");
+        }
+
         user.LastLoginAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 

@@ -87,36 +87,7 @@ async function fetchActivities() {
     })
     activityList.value = res.items || res
   } catch {
-    // 模拟数据
-    activityList.value = [
-      {
-        id: 1,
-        title: '校史馆公益讲解',
-        startTime: '2026-06-22 10:00',
-        location: '校史馆',
-        description: '由专业讲解员带领参观校史馆，了解学校百年发展历程。',
-        registered: 25,
-        maxParticipants: 50,
-      },
-      {
-        id: 2,
-        title: '实验室开放参观',
-        startTime: '2026-06-23 14:00',
-        location: '理工楼 A 座',
-        description: '参观最新科研实验室，体验前沿科技设备。',
-        registered: 45,
-        maxParticipants: 50,
-      },
-      {
-        id: 3,
-        title: '招生宣讲会',
-        startTime: '2026-06-25 09:00',
-        location: '学术报告厅',
-        description: '招生办老师现场解答报考相关问题，了解招生政策。',
-        registered: 120,
-        maxParticipants: 200,
-      },
-    ]
+    activityList.value = []
   }
 }
 

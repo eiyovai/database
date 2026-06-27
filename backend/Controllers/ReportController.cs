@@ -16,7 +16,7 @@ public class ReportController : ControllerBase
     public ReportController(CampusVisitorDbContext db) => _db = db;
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "visitor,security,admin")]
     public async Task<ActionResult> Create([FromBody] CreateReportRequest request)
     {
         var report = new Report
@@ -30,21 +30,6 @@ public class ReportController : ControllerBase
         };
         _db.Reports.Add(report);
         await _db.SaveChangesAsync();
-
-        // 记录审计日志
-        var reporterId = report.ReporterId;
-        _db.AuditLogs.Add(new AuditLog
-        {
-            OperatorId = reporterId,
-            ActionType = "report",
-            ActionDetail = $"提交举报：{request.Target} - {request.ViolationType}",
-            TargetType = "Report",
-            TargetId = report.Id,
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-            Result = "success",
-        });
-        await _db.SaveChangesAsync();
-
         return Ok(new { message = "举报已提交" });
     }
 
@@ -72,65 +57,60 @@ public class ReportController : ControllerBase
         report.ReviewerId = reviewerId;
         report.ReviewedAt = DateTime.UtcNow;
 
-        // 审核通过时创建违规记录
-        var autoBlacklisted = false;
+        // 审核通过：自动创建违规记录 → 累计次数 → 自动拉黑
         if (request.Status == "approved")
         {
+            // 查找被举报用户
             var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.Name == report.TargetName);
+
+            // 创建违规记录
+            var violation = new ViolationRecord
+            {
+                UserId = targetUser?.Id ?? 0,
+                ViolationType = report.ViolationType,
+                Description = report.Description,
+                OccurredAt = report.OccurredAt,
+                Location = report.Location,
+                Severity = "minor",
+                SourceType = "report",
+                SourceId = report.Id,
+            };
+            _db.ViolationRecords.Add(violation);
+
             if (targetUser != null)
             {
-                var violation = new ViolationRecord
-                {
-                    UserId = targetUser.Id,
-                    ViolationType = report.ViolationType,
-                    Description = report.Description,
-                    OccurredAt = report.OccurredAt,
-                    Location = report.Location,
-                    Severity = "major",
-                    SourceType = "report",
-                    SourceId = report.Id,
-                };
-                _db.ViolationRecords.Add(violation);
+                // 统计该用户累计违规次数
+                var totalViolations = await _db.ViolationRecords
+                    .CountAsync(v => v.UserId == targetUser.Id);
 
-                // 累计违规次数达3次则自动拉黑
-                var violationCount = await _db.ViolationRecords.CountAsync(v => v.UserId == targetUser.Id) + 1;
-                if (violationCount >= 3)
+                // 检查是否已在黑名单中
+                var existingBlacklist = await _db.Blacklists
+                    .FirstOrDefaultAsync(b => b.UserId == targetUser.Id && b.IsActive);
+
+                if (existingBlacklist != null)
                 {
-                    var existing = await _db.Blacklists.FirstOrDefaultAsync(b => b.UserId == targetUser.Id && b.IsActive);
-                    if (existing == null)
+                    // 已在黑名单，更新违规次数
+                    existingBlacklist.ViolationCount = totalViolations;
+                    existingBlacklist.Reason = $"累计违规{totalViolations}次（含：{report.ViolationType}）";
+                }
+                else if (totalViolations >= 3)
+                {
+                    // 累计违规≥3次，自动加入黑名单
+                    _db.Blacklists.Add(new Blacklist
                     {
-                        _db.Blacklists.Add(new Blacklist
-                        {
-                            UserId = targetUser.Id,
-                            Reason = $"累计违规{violationCount}次，自动拉黑",
-                            ViolationCount = violationCount,
-                            BlacklistedAt = DateTime.UtcNow,
-                            IsActive = true,
-                            OperatorId = reviewerId,
-                        });
-                        autoBlacklisted = true;
-                    }
+                        UserId = targetUser.Id,
+                        Reason = $"累计违规{totalViolations}次（含：{report.ViolationType}）",
+                        ViolationCount = totalViolations,
+                        OperatorId = reviewerId,
+                        BlacklistedAt = DateTime.UtcNow,
+                        ExpiresAt = DateTime.UtcNow.AddMonths(3), // 3个月后自动解禁
+                        IsActive = true,
+                    });
                 }
             }
         }
 
         await _db.SaveChangesAsync();
-
-        // 记录审计日志
-        var actionText = request.Status == "approved" ? "审核通过举报" : "审核驳回举报";
-        if (autoBlacklisted) actionText += "（自动拉黑）";
-        _db.AuditLogs.Add(new AuditLog
-        {
-            OperatorId = reviewerId,
-            ActionType = "review",
-            ActionDetail = $"{actionText}：{report.TargetName} - {report.ViolationType}",
-            TargetType = "Report",
-            TargetId = report.Id,
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-            Result = "success",
-        });
-        await _db.SaveChangesAsync();
-
         return Ok(new { message = "审核完成" });
     }
 }

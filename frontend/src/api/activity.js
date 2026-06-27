@@ -22,7 +22,7 @@ export function getMyRegistrations(params) {
 
 // 取消报名
 export function cancelRegistration(id) {
-  return request.put(`/activities/registrations/${id}/cancel`)
+  return request.put(`/activities/${id}/cancel-registration`)
 }
 
 // === 管理员接口 ===

@@ -2,10 +2,15 @@ namespace CampusVisitorApi.DTOs;
 
 public class SaveOpenRuleRequest
 {
+    public int? AreaId { get; set; }
     public string DateType { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public string TimeSlot { get; set; } = string.Empty;
+    public string? MorningStart { get; set; }
+    public string? MorningEnd { get; set; }
+    public string? AfternoonStart { get; set; }
+    public string? AfternoonEnd { get; set; }
     public int MaxCapacity { get; set; }
     public bool IsActive { get; set; }
     public string? Remark { get; set; }
@@ -19,6 +24,10 @@ public class SaveAreaRequest
     public string AccessLevel { get; set; } = "public";
     public List<string> AllowedTypes { get; set; } = new();
     public string? Description { get; set; }
+    public string? MorningStart { get; set; }
+    public string? MorningEnd { get; set; }
+    public string? AfternoonStart { get; set; }
+    public string? AfternoonEnd { get; set; }
 }
 
 public class CreateScheduleRequest

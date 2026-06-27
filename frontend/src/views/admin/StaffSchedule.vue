@@ -23,7 +23,7 @@
         </el-table-column>
         <el-table-column prop="location" label="工作地点" width="120" />
         <el-table-column prop="task" label="工作内容" min-width="160" show-overflow-tooltip />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" text @click="showDialog(row)">编辑</el-button>
             <el-button type="danger" size="small" text @click="handleDelete(row)">删除</el-button>
@@ -92,11 +92,7 @@ async function fetchSchedules() {
     const res = await getScheduleList()
     schedules.value = res.items || res
   } catch {
-    schedules.value = [
-      { staffName: '王大明', staffRole: 'volunteer', workDate: '2026-06-22', shift: 'morning', location: '校门广场', task: '访客引导' },
-      { staffName: '李小华', staffRole: 'guide', workDate: '2026-06-22', shift: 'morning', location: '校史馆', task: '公益讲解' },
-      { staffName: '张卫国', staffRole: 'security', workDate: '2026-06-22', shift: 'full_day', location: '南门', task: '入校核验' },
-    ]
+    schedules.value = []
   }
 }
 

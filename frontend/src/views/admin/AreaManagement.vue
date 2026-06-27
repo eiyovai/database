@@ -27,7 +27,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" text @click="showDialog(row)">编辑</el-button>
             <el-button type="danger" size="small" text @click="handleDelete(row)">删除</el-button>
@@ -70,6 +70,12 @@
             <el-checkbox label="partner">合作单位</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
+        <el-form-item label="上午开放">
+          <el-time-picker v-model="form.morningStart" is-range :placeholder="['开始','结束']" format="HH:mm" value-format="HH:mm" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="下午开放">
+          <el-time-picker v-model="form.afternoonStart" is-range :placeholder="['开始','结束']" format="HH:mm" value-format="HH:mm" style="width:100%" />
+        </el-form-item>
         <el-form-item label="区域描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" />
         </el-form-item>
@@ -99,6 +105,7 @@ const typeMap = { parent: '家长', alumni: '校友', tourist: '游客', study_g
 
 const form = reactive({
   name: '', code: '', type: 'public', accessLevel: 'public', allowedTypes: [], description: '',
+  morningStart: null, morningEnd: null, afternoonStart: null, afternoonEnd: null,
 })
 
 async function fetchAreas() {
@@ -106,24 +113,36 @@ async function fetchAreas() {
     const res = await getAreaList()
     areas.value = res.items || res
   } catch {
-    areas.value = [
-      { name: '校门广场', code: 'A01', type: 'public', accessLevel: 'public', allowedTypes: ['parent', 'alumni', 'tourist', 'study_group', 'partner'], description: '校园入口区域' },
-      { name: '校史馆', code: 'A02', type: 'public', accessLevel: 'restricted', allowedTypes: ['alumni', 'study_group'], description: '需预约参观' },
-      { name: '实验室展示区', code: 'B01', type: 'lab', accessLevel: 'restricted', allowedTypes: ['study_group', 'partner'], description: '研学团队及合作单位可进入' },
-      { name: '办公区域', code: 'C01', type: 'office', accessLevel: 'restricted', allowedTypes: ['partner'], description: '仅合作单位人员可通行' },
-    ]
+    areas.value = []
   }
 }
 
 function showDialog(row) {
   isEdit.value = !!row
-  Object.assign(form, row ? { ...row, allowedTypes: row.areaPermissions?.map(p => p.visitorType) || row.allowedTypes || [] } : { name: '', code: '', type: 'public', accessLevel: 'public', allowedTypes: [], description: '' })
+  if (row) {
+    Object.assign(form, {
+      ...row,
+      allowedTypes: row.areaPermissions?.map(p => p.visitorType) || row.allowedTypes || [],
+      morningStart: row.morningStart ? [row.morningStart, row.morningEnd] : null,
+      afternoonStart: row.afternoonStart ? [row.afternoonStart, row.afternoonEnd] : null,
+    })
+  } else {
+    Object.assign(form, { name: '', code: '', type: 'public', accessLevel: 'public', allowedTypes: [], description: '', morningStart: null, morningEnd: null, afternoonStart: null, afternoonEnd: null })
+  }
   dialogVisible.value = true
 }
 
 async function handleSaveArea() {
   try {
-    await saveAreaApi({ ...form, allowedTypes: form.allowedTypes })
+    const payload = {
+      ...form,
+      allowedTypes: form.allowedTypes,
+      morningStart: form.morningStart?.[0] || null,
+      morningEnd: form.morningStart?.[1] || null,
+      afternoonStart: form.afternoonStart?.[0] || null,
+      afternoonEnd: form.afternoonStart?.[1] || null,
+    }
+    await saveAreaApi(payload)
     ElMessage.success(isEdit.value ? '区域已更新' : '区域已创建')
     dialogVisible.value = false
     await fetchAreas()

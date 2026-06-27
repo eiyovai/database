@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { getAuditLogs } from '@/api/admin'
 
 const logs = ref([])
@@ -74,21 +74,23 @@ const actionTypeMap = { review: '审核操作', config: '配置修改', user: '�
 
 async function fetchLogs() {
   try {
-    const res = await getAuditLogs({ page: page.value, pageSize: pageSize.value, keyword: keyword.value })
-    logs.value = res.items || res
-    total.value = res.total || logs.value.length
+    const params = { page: page.value, pageSize: pageSize.value, keyword: keyword.value }
+    if (actionFilter.value) params.actionType = actionFilter.value
+    const res = await getAuditLogs(params)
+    logs.value = res.items || []
+    total.value = res.total || 0
   } catch {
-    logs.value = Array.from({ length: 10 }, (_, i) => ({
-      time: `2026-06-19 ${String(9 + i).padStart(2, '0')}:${String((i * 3) % 60).padStart(2, '0')}:00`,
-      operator: '管理员',
-      actionType: ['review', 'config', 'user', 'export'][i % 4],
-      detail: ['审核通过预约R001', '修改开放规则-周末容量', '将赵六加入黑名单', '导出本周客流数据'][i % 4],
-      ip: '192.168.1.100',
-      result: 'success',
-    }))
-    total.value = logs.value.length
+    logs.value = []
+    total.value = 0
   }
 }
+
+watch([keyword, actionFilter], () => {
+  page.value = 1
+  fetchLogs()
+})
+
+watch(page, () => fetchLogs())
 
 onMounted(fetchLogs)
 </script>

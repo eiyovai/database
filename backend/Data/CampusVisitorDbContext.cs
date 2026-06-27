@@ -44,6 +44,7 @@ public class CampusVisitorDbContext : DbContext
         // Reservations
         modelBuilder.Entity<Reservation>(e =>
         {
+            e.ToTable(tb => tb.HasTrigger("trg_Reservations_StatusChange"));
             e.HasIndex(r => r.ReservationNo).IsUnique();
             e.HasIndex(r => r.UserId);
             e.HasIndex(r => r.Status);
@@ -66,6 +67,7 @@ public class CampusVisitorDbContext : DbContext
         modelBuilder.Entity<CampusArea>(e =>
         {
             e.HasIndex(a => a.Code).IsUnique();
+            e.HasMany(a => a.OpenRules).WithOne(r => r.Area).HasForeignKey(r => r.AreaId).OnDelete(DeleteBehavior.SetNull);
         });
 
         // AreaPermissions

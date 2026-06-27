@@ -53,12 +53,8 @@
           <template #header>今日离校统计</template>
           <div class="stats">
             <div class="stats-row">
-              <span>已离校人数</span>
-              <span class="num">67</span>
-            </div>
-            <div class="stats-row">
               <span>未离校（在校）</span>
-              <span class="num primary">89</span>
+              <span class="num primary">{{ stats.currentVisitors }}</span>
             </div>
           </div>
         </el-card>
@@ -68,36 +64,61 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { exitRecord } from '@/api/entryexit'
+import { ref, onMounted } from 'vue'
+import { searchReservation, exitRecord } from '@/api/entryexit'
+import { getCurrentVisitors } from '@/api/entryexit'
 import { ElMessage } from 'element-plus'
 
 const query = ref('')
 const exitGate = ref('南门')
 const searchResult = ref(null)
 const exiting = ref(false)
+const stats = ref({ exits: 0, currentVisitors: 0 })
 
-function handleSearch() {
+async function fetchStats() {
+  try {
+    const res = await getCurrentVisitors()
+    const items = Array.isArray(res) ? res : (res.items || [])
+    stats.value.currentVisitors = items.length
+  } catch { /* 静默失败 */ }
+}
+
+async function handleSearch() {
   if (!query.value.trim()) {
     ElMessage.warning('请输入搜索条件')
     return
   }
-  searchResult.value = {
-    name: '张三', entryTime: '2026-06-22 09:15', entryGate: '南门', companions: 2,
+  searchResult.value = null
+  try {
+    const res = await searchReservation({ query: query.value })
+    searchResult.value = {
+      name: res.visitorName,
+      entryTime: res.entryTime || res.createdAt,
+      entryGate: res.entryGate || '',
+      companions: res.companions || 0,
+    }
+  } catch {
+    ElMessage.error('未找到匹配的在校访客')
   }
 }
 
 async function handleExit() {
+  if (!searchResult.value) return
   exiting.value = true
   try {
     await exitRecord({ name: searchResult.value.name, gate: exitGate.value })
     ElMessage.success(`${searchResult.value.name} 已离校`)
     searchResult.value = null
     query.value = ''
-  } catch {} finally {
+    await fetchStats()
+  } catch {
+    // 错误已在拦截器中处理
+  } finally {
     exiting.value = false
   }
 }
+
+onMounted(fetchStats)
 </script>
 
 <style scoped>

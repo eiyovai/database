@@ -70,56 +70,25 @@
       </el-col>
     </el-row>
 
-    <!-- 举报待审核列表 -->
-    <el-card shadow="never" style="margin-top: 16px">
-      <template #header>
-        <div style="display: flex; justify-content: space-between; align-items: center">
-          <span>举报待审核</span>
-          <el-button text type="primary" size="small" @click="$router.push('/admin/reports')">查看全部</el-button>
-        </div>
-      </template>
-      <el-table :data="pendingReports" stripe size="small" v-if="pendingReports.length">
-        <el-table-column label="举报人" width="100">
-          <template #default="{ row }">{{ row.reporter?.name || row.reporter }}</template>
-        </el-table-column>
-        <el-table-column prop="targetName" label="举报对象" width="120" />
-        <el-table-column prop="violationType" label="违规类型" width="110">
-          <template #default="{ row }">
-            <el-tag size="small">{{ violationTypeMap[row.violationType] || row.violationType }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="location" label="地点" width="120" show-overflow-tooltip />
-        <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }">
-            <el-button type="success" size="small" @click="handleReview(row, 'approved')">通过</el-button>
-            <el-button type="danger" size="small" @click="handleReview(row, 'rejected')">驳回</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div v-else style="text-align: center; color: #909399; padding: 24px 0">暂无待审核的举报</div>
-    </el-card>
-
     <!-- 热门数据 -->
     <el-row :gutter="16" style="margin-top: 16px">
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header>热门参观区域 Top5</template>
-          <el-table :data="hotAreas" size="small">
-            <el-table-column prop="rank" label="排名" width="60" />
-            <el-table-column prop="name" label="区域" />
-            <el-table-column prop="count" label="访问人数" />
-          </el-table>
+          <template #header>系统概览</template>
+          <div style="padding: 20px; text-align: center; color: #909399;">
+            <p>今日预约 {{ stats.todayReservations }} 人 | 在校 {{ stats.currentVisitors }} 人</p>
+            <p>待审核 {{ stats.pendingReviews }} 条 | 黑名单 {{ stats.blacklistCount }} 人</p>
+          </div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header>各校门客流量</template>
-          <el-table :data="gateStats" size="small">
-            <el-table-column prop="gate" label="校门" />
-            <el-table-column prop="entryCount" label="入校人数" />
-            <el-table-column prop="exitCount" label="离校人数" />
-          </el-table>
+          <template #header>快捷操作</template>
+          <div style="padding: 20px; text-align: center;">
+            <el-button type="primary" @click="$router.push('/admin/review')">预约审核</el-button>
+            <el-button type="success" @click="$router.push('/admin/areas')">区域管理</el-button>
+            <el-button type="warning" @click="$router.push('/admin/open-rules')">开放规则</el-button>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -129,8 +98,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getDashboardStats } from '@/api/admin'
-import { getReportList, reviewReport } from '@/api/report'
-import { ElMessage, ElMessageBox } from 'element-plus'
 
 const stats = ref({
   todayReservations: 0,
@@ -139,61 +106,21 @@ const stats = ref({
   blacklistCount: 0,
 })
 
-const pendingReports = ref([])
-
-const violationTypeMap = {
-  trespass: '越权进入', harassment: '骚扰行为', damage: '损坏公物',
-  noise: '噪音扰民', other: '其他',
-}
-
 async function fetchStats() {
   try {
     const res = await getDashboardStats()
-    stats.value = res
+    stats.value = {
+      todayReservations: res.todayReservations || 0,
+      currentVisitors: res.currentVisitors || 0,
+      pendingReviews: res.pendingReviews || 0,
+      blacklistCount: res.blacklistCount || 0,
+    }
   } catch {
     // 保持默认 0 值
   }
 }
 
-async function fetchPendingReports() {
-  try {
-    const res = await getReportList({ status: 'pending' })
-    pendingReports.value = res.items || res
-  } catch {
-    pendingReports.value = []
-  }
-}
-
-async function handleReview(row, action) {
-  const text = action === 'approved' ? '通过' : '驳回'
-  try {
-    await ElMessageBox.confirm(`确定${text}该举报？`, '确认')
-    await reviewReport(row.id, { status: action })
-    ElMessage.success(`已${text}`)
-    await fetchPendingReports()
-    await fetchStats()
-  } catch {}
-}
-
-onMounted(() => {
-  fetchStats()
-  fetchPendingReports()
-})
-
-const hotAreas = [
-  { rank: 1, name: '校史馆', count: 320 },
-  { rank: 2, name: '图书馆', count: 280 },
-  { rank: 3, name: '操场/体育馆', count: 210 },
-  { rank: 4, name: '理工楼实验室', count: 156 },
-  { rank: 5, name: '学生食堂', count: 145 },
-]
-
-const gateStats = [
-  { gate: '南门（正门）', entryCount: 520, exitCount: 480 },
-  { gate: '北门', entryCount: 230, exitCount: 210 },
-  { gate: '东门', entryCount: 180, exitCount: 165 },
-  { gate: '西门', entryCount: 89, exitCount: 92 },
-]
+onMounted(fetchStats)
 </script>
 
 <style scoped>

@@ -46,14 +46,9 @@ export function removeBlacklist(id) {
   return request.delete(`/blacklist/${id}`)
 }
 
-// 添加黑名单
-export function addBlacklist(data) {
-  return request.post('/blacklist', data)
-}
-
-// 获取用户列表（用于黑名单选择）
-export function getUserList(params) {
-  return request.get('/users', { params })
+// 获取违规记录列表
+export function getViolations(params) {
+  return request.get('/violations', { params })
 }
 
 // === 排班管理 ===
@@ -76,13 +71,6 @@ export function updateSchedule(id, data) {
 // 删除排班
 export function deleteSchedule(id) {
   return request.delete(`/schedules/${id}`)
-}
-
-// === 违规记录 ===
-
-// 获取违规记录列表
-export function getViolationList(params) {
-  return request.get('/violations', { params })
 }
 
 // === 审计日志 ===

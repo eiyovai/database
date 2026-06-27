@@ -154,7 +154,7 @@ const campusStatus = ref({
   isOpen: true,
   todayReservations: 0,
   currentVisitors: 0,
-  maxCapacity: 500,
+  maxCapacity: 0,
 })
 
 async function fetchCampusStatus() {

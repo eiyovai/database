@@ -35,6 +35,7 @@ public class ActivityService : IActivityService
 
     public async Task<List<ActivityListResponse>> GetPublicAsync(string? keyword, string? status)
     {
+        await AutoCloseExpiredAsync();
         var query = _db.Activities.Where(a => a.Status == "open").AsQueryable();
 
         if (!string.IsNullOrEmpty(keyword))
@@ -46,6 +47,7 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityListResponse> GetDetailAsync(int id)
     {
+        await AutoCloseExpiredAsync();
         var activity = await _db.Activities.FindAsync(id)
             ?? throw new KeyNotFoundException("活动不存在");
         return _mapper.Map<ActivityListResponse>(activity);
@@ -90,6 +92,7 @@ public class ActivityService : IActivityService
 
     public async Task<List<ActivityListResponse>> GetMyRegistrationsAsync(int userId)
     {
+        await AutoCloseExpiredAsync();
         var regs = await _db.ActivityRegistrations
             .Include(r => r.Activity)
             .Where(r => r.UserId == userId && r.Status == "registered")
@@ -101,6 +104,7 @@ public class ActivityService : IActivityService
 
     public async Task<List<ActivityListResponse>> GetListAsync()
     {
+        await AutoCloseExpiredAsync();
         var items = await _db.Activities.OrderByDescending(a => a.CreatedAt).ToListAsync();
         return _mapper.Map<List<ActivityListResponse>>(items);
     }
@@ -150,5 +154,21 @@ public class ActivityService : IActivityService
         reg.Status = "checked_in";
         reg.CheckedInAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// 自动关闭已过期的活动
+    /// </summary>
+    private async Task AutoCloseExpiredAsync()
+    {
+        var expired = await _db.Activities
+            .Where(a => a.Status == "open" && a.EndTime < DateTime.UtcNow)
+            .ToListAsync();
+
+        if (expired.Count > 0)
+        {
+            foreach (var a in expired) a.Status = "closed";
+            await _db.SaveChangesAsync();
+        }
     }
 }

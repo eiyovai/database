@@ -19,13 +19,29 @@ public class ReservationService : IReservationService
 
     public async Task CreateAsync(int userId, CreateReservationRequest request)
     {
+        // 黑名单拦截
+        var blacklisted = await _db.Blacklists
+            .AnyAsync(b => b.UserId == userId && b.IsActive && b.ExpiresAt > DateTime.UtcNow);
+        if (blacklisted)
+        {
+            var bl = await _db.Blacklists.FirstAsync(b => b.UserId == userId && b.IsActive);
+            throw new InvalidOperationException(
+                $"您已被列入黑名单（{bl.Reason}），{bl.ExpiresAt:yyyy-MM-dd} 前无法预约。如有疑问请联系管理员。");
+        }
+
         var last = await _db.Reservations
             .OrderByDescending(r => r.Id)
             .Select(r => r.ReservationNo)
             .FirstOrDefaultAsync();
 
         var seq = 1;
-        if (last != null) seq = int.Parse(last[^4..]) + 1;
+        if (last != null)
+        {
+            // 仅递增与今天相同日期前缀的预约编号
+            var todayPrefix = $"R{DateTime.Now:yyyyMMdd}";
+            if (last.StartsWith(todayPrefix))
+                seq = int.Parse(last[^4..]) + 1;
+        }
 
         var reservation = new Reservation
         {

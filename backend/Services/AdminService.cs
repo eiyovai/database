@@ -25,6 +25,7 @@ public interface IAdminService
     // Schedules
     Task<List<StaffSchedule>> GetSchedulesAsync();
     Task<StaffSchedule> CreateScheduleAsync(CreateScheduleRequest request);
+    Task<StaffSchedule> UpdateScheduleAsync(int id, CreateScheduleRequest request);
     Task DeleteScheduleAsync(int id);
 
     // Reports
@@ -32,7 +33,7 @@ public interface IAdminService
     Task ReviewReportAsync(int reviewerId, int id, ReviewReportRequest request);
 
     // Audit Logs
-    Task<List<AuditLog>> GetAuditLogsAsync(string? keyword, string? actionType, int page, int pageSize);
+    Task<PagedResult<AuditLog>> GetAuditLogsAsync(string? keyword, string? actionType, int page, int pageSize);
 
     // Dashboard
     Task<DashboardStatsResponse> GetDashboardStatsAsync();
@@ -45,16 +46,29 @@ public class AdminService : IAdminService
     public AdminService(CampusVisitorDbContext db) => _db = db;
 
     public async Task<List<OpenRule>> GetOpenRulesAsync()
-        => await _db.OpenRules.OrderByDescending(r => r.CreatedAt).ToListAsync();
+        => await _db.OpenRules.Include(r => r.Area)
+            .OrderByDescending(r => r.CreatedAt).ToListAsync();
 
     public async Task<OpenRule> SaveOpenRuleAsync(SaveOpenRuleRequest request)
     {
+        // 验证 AreaId 有效
+        if (request.AreaId.HasValue)
+        {
+            var area = await _db.CampusAreas.FindAsync(request.AreaId.Value)
+                ?? throw new KeyNotFoundException("指定区域不存在");
+        }
+
         var rule = new OpenRule
         {
+            AreaId = request.AreaId,
             DateType = request.DateType,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             TimeSlot = request.TimeSlot,
+            MorningStart = ParseTime(request.MorningStart),
+            MorningEnd = ParseTime(request.MorningEnd),
+            AfternoonStart = ParseTime(request.AfternoonStart),
+            AfternoonEnd = ParseTime(request.AfternoonEnd),
             MaxCapacity = request.MaxCapacity,
             IsActive = request.IsActive,
             Remark = request.Remark,
@@ -83,6 +97,10 @@ public class AdminService : IAdminService
             Type = request.Type,
             AccessLevel = request.AccessLevel,
             Description = request.Description,
+            MorningStart = ParseTime(request.MorningStart),
+            MorningEnd = ParseTime(request.MorningEnd),
+            AfternoonStart = ParseTime(request.AfternoonStart),
+            AfternoonEnd = ParseTime(request.AfternoonEnd),
         };
         _db.CampusAreas.Add(area);
         await _db.SaveChangesAsync();
@@ -92,6 +110,12 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
 
         return area;
+    }
+
+    private static TimeSpan? ParseTime(string? time)
+    {
+        if (string.IsNullOrWhiteSpace(time)) return null;
+        return TimeSpan.TryParse(time, out var ts) ? ts : null;
     }
 
     public async Task DeleteAreaAsync(int id)
@@ -160,6 +184,22 @@ public class AdminService : IAdminService
         return schedule;
     }
 
+    public async Task<StaffSchedule> UpdateScheduleAsync(int id, CreateScheduleRequest request)
+    {
+        var schedule = await _db.StaffSchedules.FindAsync(id)
+            ?? throw new KeyNotFoundException("排班记录不存在");
+
+        schedule.StaffRole = request.StaffRole;
+        schedule.WorkDate = request.WorkDate;
+        schedule.Shift = request.Shift;
+        schedule.Location = request.Location;
+        schedule.Task = request.Task;
+        schedule.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return schedule;
+    }
+
     public async Task DeleteScheduleAsync(int id)
     {
         var s = await _db.StaffSchedules.FindAsync(id) ?? throw new KeyNotFoundException();
@@ -169,7 +209,7 @@ public class AdminService : IAdminService
 
     public async Task<List<Report>> GetReportsAsync(string? status)
     {
-        var query = _db.Reports.AsQueryable();
+        var query = _db.Reports.Include(r => r.Reporter).AsQueryable();
         if (!string.IsNullOrEmpty(status)) query = query.Where(r => r.Status == status);
         return await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
     }
@@ -184,15 +224,18 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
     }
 
-    public async Task<List<AuditLog>> GetAuditLogsAsync(string? keyword, string? actionType, int page, int pageSize)
+    public async Task<PagedResult<AuditLog>> GetAuditLogsAsync(string? keyword, string? actionType, int page, int pageSize)
     {
-        var query = _db.AuditLogs.AsQueryable();
+        var query = _db.AuditLogs.Include(l => l.Operator).AsQueryable();
         if (!string.IsNullOrEmpty(actionType)) query = query.Where(l => l.ActionType == actionType);
         if (!string.IsNullOrEmpty(keyword)) query = query.Where(l => l.ActionDetail.Contains(keyword));
 
-        return await query.OrderByDescending(l => l.CreatedAt)
+        var total = await query.CountAsync();
+        var items = await query.OrderByDescending(l => l.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .ToListAsync();
+
+        return new PagedResult<AuditLog> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<DashboardStatsResponse> GetDashboardStatsAsync()

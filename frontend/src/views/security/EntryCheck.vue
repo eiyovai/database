@@ -34,7 +34,7 @@
             <el-descriptions :column="2" border size="small">
               <el-descriptions-item label="姓名">{{ searchResult.visitorName }}</el-descriptions-item>
               <el-descriptions-item label="访客类型">{{ typeMap[searchResult.visitorType] }}</el-descriptions-item>
-              <el-descriptions-item label="入校日期">{{ searchResult.visitDate }}</el-descriptions-item>
+              <el-descriptions-item label="入校日期">{{ searchResult.visitDate?.split('T')[0] }}</el-descriptions-item>
               <el-descriptions-item label="时段">{{ timeSlotMap[searchResult.timeSlot] }}</el-descriptions-item>
               <el-descriptions-item label="同行人数">{{ searchResult.companions }}</el-descriptions-item>
               <el-descriptions-item label="状态">
@@ -68,19 +68,15 @@
           <div class="today-stats">
             <div class="stats-row">
               <span>今日已核验入校</span>
-              <span class="num success">156</span>
+              <span class="num success">{{ stats.todayEntries }}</span>
             </div>
             <div class="stats-row">
               <span>今日已离校</span>
-              <span class="num">67</span>
+              <span class="num">{{ stats.todayExits }}</span>
             </div>
             <div class="stats-row">
               <span>当前在校</span>
-              <span class="num primary">89</span>
-            </div>
-            <div class="stats-row">
-              <span>核验失败</span>
-              <span class="num danger">3</span>
+              <span class="num primary">{{ stats.currentVisitors }}</span>
             </div>
           </div>
         </el-card>
@@ -100,7 +96,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { searchReservation, entryCheck, getEntryExitRecords } from '@/api/entryexit'
+import { searchReservation, confirmEntry } from '@/api/entryexit'
+import request from '@/api/request'
 import { ElMessage } from 'element-plus'
 
 const query = ref('')
@@ -110,20 +107,19 @@ const searchResult = ref(null)
 
 const typeMap = { parent: '家长', alumni: '校友', tourist: '游客', study_group: '研学团', partner: '合作单位' }
 const timeSlotMap = { morning: '上午', afternoon: '下午', full_day: '全天' }
-const statusMap = { pending: '待审核', approved: '已通过', rejected: '已拒绝', checked_in: '已入校', checked_out: '已离校' }
-const statusType = (s) => ({ pending: 'warning', approved: 'success', checked_in: 'primary', checked_out: 'info' }[s] || 'info')
+const statusMap = { pending: '待审核', approved: '已通过', rejected: '已拒绝', cancelled: '已取消', checked_in: '已入校', checked_out: '已离校' }
+const statusType = (s) => ({ pending: 'warning', approved: 'success', rejected: 'danger', checked_in: 'primary', checked_out: 'info' }[s] || 'info')
 
 const recentEntries = ref([])
+const stats = ref({ todayEntries: 0, todayExits: 0, currentVisitors: 0 })
 
-// 将后端 PascalCase 转为前端 camelCase
-function toCamelCase(obj) {
-  if (!obj || typeof obj !== 'object') return obj
-  const result = {}
-  for (const [key, value] of Object.entries(obj)) {
-    const camelKey = key.charAt(0).toLowerCase() + key.slice(1)
-    result[camelKey] = value
-  }
-  return result
+async function fetchStats() {
+  try {
+    const res = await request.get('/entry-exit/stats').catch(() => ({}))
+    stats.value.todayEntries = res.todayEntries || 0
+    stats.value.todayExits = res.todayExits || 0
+    stats.value.currentVisitors = res.currentVisitors || 0
+  } catch { /* 静默失败 */ }
 }
 
 async function handleSearch() {
@@ -132,27 +128,29 @@ async function handleSearch() {
     return
   }
   searching.value = true
+  searchResult.value = null
   try {
-    const res = await searchReservation({ Query: query.value })
-    searchResult.value = toCamelCase(res)
+    const res = await searchReservation({ query: query.value })
+    searchResult.value = res
   } catch {
     ElMessage.error('未找到匹配的预约记录')
-    searchResult.value = null
   } finally {
     searching.value = false
   }
 }
 
 async function handleEntry() {
+  if (!searchResult.value) return
   checking.value = true
   try {
-    await entryCheck({ id: searchResult.value.id, gate: '南门' })
-    ElMessage.success(`${searchResult.value.visitorName || searchResult.value.name} 已成功入校`)
+    await confirmEntry({ id: searchResult.value.id, gate: '南门' })
+    ElMessage.success(`${searchResult.value.visitorName} 已成功入校`)
     searchResult.value = null
     query.value = ''
     await fetchRecent()
+    await fetchStats()
   } catch {
-    // handled
+    // 错误已在拦截器中处理
   } finally {
     checking.value = false
   }
@@ -160,26 +158,22 @@ async function handleEntry() {
 
 async function fetchRecent() {
   try {
-    const res = await getEntryExitRecords({ page: 1, pageSize: 5 })
-    const items = Array.isArray(res) ? res : (res.items || [])
-    recentEntries.value = items.map(r => {
-      const c = toCamelCase(r)
-      return {
-        name: c.reservation?.visitorName || c.visitorName || '未知',
-        gate: c.entryGate?.name || '未知',
-        time: c.entryTime ? new Date(c.entryTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--',
-      }
-    })
+    const res = await request.get('/entry-exit/recent').catch(() => [])
+    const items = Array.isArray(res) ? res : []
+    recentEntries.value = items.map(r => ({
+      name: r.name || '',
+      gate: r.gate || '',
+      time: r.entryTime ? new Date(r.entryTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '',
+    }))
   } catch {
-    recentEntries.value = [
-      { name: '张三', gate: '南门', time: '09:15' },
-      { name: '李四', gate: '南门', time: '09:30' },
-      { name: '王五', gate: '北门', time: '09:45' },
-    ]
+    recentEntries.value = []
   }
 }
 
-onMounted(fetchRecent)
+onMounted(() => {
+  fetchRecent()
+  fetchStats()
+})
 </script>
 
 <style scoped>

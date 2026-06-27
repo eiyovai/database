@@ -1,12 +1,12 @@
 import request from './request'
 
-// 查询预约（安保搜索）
+// 搜索预约（安保核验查询）
 export function searchReservation(data) {
   return request.post('/entry-exit/search', data)
 }
 
-// 入校核验（安保）
-export function entryCheck(data) {
+// 确认入校（安保）
+export function confirmEntry(data) {
   return request.post('/entry-exit/entry', data)
 }
 
@@ -20,7 +20,7 @@ export function getCurrentVisitors(params) {
   return request.get('/entry-exit/current', { params })
 }
 
-// 获取出入校记录
-export function getEntryExitRecords(params) {
-  return request.get('/entry-exit/records', { params })
+// 获取最近入校记录
+export function getRecentEntries(params) {
+  return request.get('/entry-exit/recent', { params })
 }

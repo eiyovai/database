@@ -14,18 +14,23 @@ namespace CampusVisitorApi.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _service;
+    private readonly IEntryExitService _entryExitService;
     private readonly CampusVisitorDbContext _db;
 
-    public AdminController(IAdminService service, CampusVisitorDbContext db)
+    public AdminController(IAdminService service, IEntryExitService entryExitService, CampusVisitorDbContext db)
     {
         _service = service;
+        _entryExitService = entryExitService;
         _db = db;
     }
 
     // === Dashboard ===
     [HttpGet("admin/dashboard")]
     public async Task<ActionResult<DashboardStatsResponse>> GetDashboard()
-        => Ok(await _service.GetDashboardStatsAsync());
+    {
+        await _entryExitService.AutoDetectViolationsAsync(); // 自动检测违规
+        return Ok(await _service.GetDashboardStatsAsync());
+    }
 
     // === Open Rules ===
     [HttpGet("open-rules")]
@@ -70,44 +75,34 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<List<Blacklist>>> GetBlacklist()
         => Ok(await _service.GetBlacklistAsync());
 
-    [HttpPost("blacklist")]
-    public async Task<ActionResult> AddBlacklist([FromBody] AddBlacklistRequest request)
-    {
-        var operatorId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-        try
-        {
-            var item = await _service.AddBlacklistAsync(operatorId, request);
-
-            // 记录审计日志
-            _db.AuditLogs.Add(new AuditLog
-            {
-                OperatorId = operatorId,
-                ActionType = "blacklist",
-                ActionDetail = $"手动将 {request.UserName} 加入黑名单",
-                TargetType = "Blacklist",
-                TargetId = item.Id,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                Result = "success",
-            });
-            await _db.SaveChangesAsync();
-
-            return Ok(new { message = "已加入黑名单" });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-    }
-
     [HttpDelete("blacklist/{id}")]
     public async Task<ActionResult> RemoveBlacklist(int id)
     {
         await _service.RemoveBlacklistAsync(id);
         return Ok(new { message = "已移出黑名单" });
+    }
+
+    // === Violations ===
+    [HttpGet("violations")]
+    public async Task<ActionResult> GetViolations()
+    {
+        var violations = await _db.ViolationRecords
+            .Include(v => v.User)
+            .OrderByDescending(v => v.CreatedAt)
+            .Select(v => new
+            {
+                v.Id,
+                UserName = v.User.Name,
+                v.ViolationType,
+                v.Description,
+                v.Location,
+                v.Severity,
+                v.SourceType,
+                v.OccurredAt,
+                v.CreatedAt,
+            })
+            .ToListAsync();
+        return Ok(violations);
     }
 
     // === Schedules ===
@@ -125,20 +120,7 @@ public class AdminController : ControllerBase
     [HttpPut("schedules/{id}")]
     public async Task<ActionResult> UpdateSchedule(int id, [FromBody] CreateScheduleRequest request)
     {
-        var schedule = await _db.StaffSchedules.FindAsync(id);
-        if (schedule == null) return NotFound(new { message = "排班不存在" });
-
-        var staff = await _db.Users.FirstOrDefaultAsync(u => u.Name == request.StaffName && u.Role == "staff");
-        if (staff == null) return NotFound(new { message = "未找到该工作人员" });
-
-        schedule.StaffId = staff.Id;
-        schedule.StaffRole = request.StaffRole;
-        schedule.WorkDate = request.WorkDate;
-        schedule.Shift = request.Shift;
-        schedule.Location = request.Location;
-        schedule.Task = request.Task;
-        schedule.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        await _service.UpdateScheduleAsync(id, request);
         return Ok(new { message = "排班已更新" });
     }
 
@@ -149,17 +131,9 @@ public class AdminController : ControllerBase
         return Ok(new { message = "已删除" });
     }
 
-    // === Users ===
-    [HttpGet("users")]
-    public async Task<ActionResult<List<User>>> GetUsers()
-    {
-        var users = await _db.Users.Where(u => u.Role == "visitor").Select(u => new { u.Id, u.Name, u.Phone }).ToListAsync();
-        return Ok(users);
-    }
-
     // === Audit Logs ===
     [HttpGet("audit-logs")]
-    public async Task<ActionResult<List<AuditLog>>> GetAuditLogs(
+    public async Task<ActionResult<PagedResult<AuditLog>>> GetAuditLogs(
         [FromQuery] string? keyword, [FromQuery] string? actionType,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         => Ok(await _service.GetAuditLogsAsync(keyword, actionType, page, pageSize));

@@ -31,7 +31,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="{ row }">
             <template v-if="row.status === 'pending'">
               <el-button type="success" size="small" @click="handleReview(row, 'approved')">通过</el-button>
@@ -63,9 +63,7 @@ async function fetchReports() {
     const res = await getReportList({ status: activeTab.value })
     reports.value = res.items || res
   } catch {
-    reports.value = [
-      { reporter: '孙同学', target: '外来人员', violationType: 'trespass', location: '理工楼B座3楼', time: '2026-06-18 14:20', description: '有非校园人员试图进入封闭实验室区域', status: 'pending' },
-    ]
+    reports.value = []
   }
 }
 

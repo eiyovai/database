@@ -107,9 +107,7 @@ async function fetchMyReports() {
     const res = await getReportList({ my: true })
     myReports.value = res.items || res
   } catch {
-    myReports.value = [
-      { id: 1, target: '外来人员', violationType: 'trespass', time: '2026-06-18 14:20', status: 'pending' },
-    ]
+    myReports.value = []
   }
 }
 

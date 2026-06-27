@@ -23,7 +23,7 @@
             <el-tag :type="statusType(row.status)" size="small">{{ statusMap[row.status] }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <template v-if="row.status === 'pending'">
               <el-button type="success" size="small" @click="handleReview(row, 'approved')">通过</el-button>
@@ -66,15 +66,11 @@ async function fetchList() {
   loading.value = true
   try {
     const res = await getReservationList({ page: page.value, pageSize: pageSize.value })
-    list.value = res.items || res
-    total.value = res.total || list.value.length
+    list.value = res.items || []
+    total.value = res.total || 0
   } catch {
-    list.value = [
-      { id: 'R001', name: '张三', phone: '138****1234', visitorType: 'tourist', visitDate: '2026-06-22', timeSlot: 'morning', companions: 2, purpose: '带孩子参观校园', status: 'pending' },
-      { id: 'R002', name: '李四', phone: '139****5678', visitorType: 'alumni', visitDate: '2026-06-23', timeSlot: 'afternoon', companions: 0, purpose: '回母校参观', status: 'pending' },
-      { id: 'R003', name: '王五', phone: '137****9012', visitorType: 'study_group', visitDate: '2026-06-24', timeSlot: 'full_day', companions: 15, purpose: '研学团队参观实验室', status: 'approved' },
-    ]
-    total.value = list.value.length
+    list.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }

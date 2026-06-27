@@ -62,6 +62,15 @@ public class ActivityController : ControllerBase
         return Ok(await _service.GetMyRegistrationsAsync(userId));
     }
 
+    [Authorize]
+    [HttpPut("{id}/cancel-registration")]
+    public async Task<ActionResult> CancelRegistration(int id)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _service.CancelRegistrationAsync(userId, id);
+        return Ok(new { message = "已取消报名" });
+    }
+
     // === 管理员接口 ===
     [Authorize(Roles = "admin")]
     [HttpGet]

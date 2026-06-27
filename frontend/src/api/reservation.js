@@ -32,7 +32,7 @@ export function reviewReservation(id, data) {
   return request.put(`/reservations/${id}/review`, data)
 }
 
-// 获取预约统计
+// 获取预约统计（复用dashboard接口）
 export function getReservationStats(params) {
-  return request.get('/reservations/stats', { params })
+  return request.get('/admin/dashboard', { params })
 }

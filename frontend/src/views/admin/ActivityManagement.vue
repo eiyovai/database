@@ -23,7 +23,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" text @click="showDialog(row)">编辑</el-button>
             <el-button type="danger" size="small" text @click="handleDelete(row)">删除</el-button>
@@ -80,10 +80,7 @@ async function fetchActivities() {
     const res = await getActivityList()
     activities.value = res.items || res
   } catch {
-    activities.value = [
-      { id: 1, title: '校史馆公益讲解', location: '校史馆', startTime: '2026-06-22 10:00', endTime: '2026-06-22 11:30', registered: 25, maxParticipants: 50, status: 'open' },
-      { id: 2, title: '实验室开放参观', location: '理工楼A座', startTime: '2026-06-23 14:00', endTime: '2026-06-23 16:00', registered: 45, maxParticipants: 50, status: 'open' },
-    ]
+    activities.value = []
   }
 }
 
