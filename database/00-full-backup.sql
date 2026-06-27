@@ -459,7 +459,7 @@ INSERT INTO [dbo].[ViolationRecords] ([UserId],[ViolationType],[Description],[Oc
 GO
 
 -- 13. 黑名单 (1条)
-INSERT INTO [dbo].[Blacklist] ([UserId],[Reason],[ViolationCount],[BlacklistedAt],[ExpiresAt],[IsActive],[OperatorId]) VALUES (5,N'累计爽约2次+超时滞留1次',3,'2026-06-17 14:00','2026-09-17 14:00',1,1)
+INSERT INTO [dbo].[Blacklist] ([UserId],[Reason],[ViolationCount],[BlacklistedAt],[ExpiresAt],[IsActive],[OperatorId]) VALUES (2,N'累计爽约2次+超时滞留1次',3,'2026-06-17 14:00','2026-09-17 14:00',1,1)
 GO
 
 -- 14. 举报 (1条)
