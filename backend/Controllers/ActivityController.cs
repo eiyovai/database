@@ -112,12 +112,4 @@ public class ActivityController : ControllerBase
         return Ok(new { message = "签到成功" });
     }
 
-    [Authorize]
-    [HttpPut("registrations/{registrationId}/cancel")]
-    public async Task<ActionResult> CancelRegistration(int registrationId)
-    {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        await _service.CancelRegistrationAsync(userId, registrationId);
-        return Ok(new { message = "报名已取消" });
-    }
 }

@@ -35,3 +35,6 @@ database/init_output.txt
 .env
 .env.local
 *.log
+
+# === SQL schema inspection output ===
+*_output.txt

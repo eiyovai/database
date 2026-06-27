@@ -12,6 +12,7 @@ public interface IEntryExitService
     Task<EntryExitRecord> ExitAsync(int operatorId, ExitRecordRequest request);
     Task<List<EntryExitRecord>> GetCurrentVisitorsAsync();
     Task AutoDetectViolationsAsync();
+    Task<List<EntryExitRecord>> GetRecordsAsync(int page, int pageSize);
 }
 
 public class EntryExitService : IEntryExitService
@@ -267,6 +268,18 @@ public class EntryExitService : IEntryExitService
             .Include(r => r.EntryGate)
             .Where(r => r.EntryTime != null && r.ExitTime == null)
             .OrderByDescending(r => r.EntryTime)
+            .ToListAsync();
+    }
+
+    public async Task<List<EntryExitRecord>> GetRecordsAsync(int page, int pageSize)
+    {
+        return await _db.EntryExitRecords
+            .Include(r => r.Reservation)
+            .Include(r => r.EntryGate)
+            .Include(r => r.ExitGate)
+            .OrderByDescending(r => r.EntryTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
     }
 }

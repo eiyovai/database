@@ -31,47 +31,15 @@
       </el-table>
     </el-card>
 
-    <el-card shadow="never" class="section-card">
-      <template #header><span class="card-title">违规记录</span></template>
-      <el-table :data="violations" stripe max-height="400">
-        <el-table-column label="姓名" width="100">
-          <template #default="{ row }">{{ row.userName }}</template>
-        </el-table-column>
-        <el-table-column label="违规类型" width="100">
-          <template #default="{ row }">
-            <el-tag :type="severityType(row.severity)" size="small">{{ violationTypeMap[row.violationType] || row.violationType }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="description" label="违规描述" min-width="250" show-overflow-tooltip />
-        <el-table-column prop="location" label="地点" width="120" />
-        <el-table-column label="来源" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.sourceType === 'system' ? 'info' : 'warning'" size="small">
-              {{ row.sourceType === 'system' ? '系统检测' : row.sourceType === 'report' ? '举报' : '人工' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="发生时间" width="120">
-          <template #default="{ row }">{{ formatDate(row.occurredAt) }}</template>
-        </el-table-column>
-      </el-table>
-    </el-card>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getBlacklist, removeBlacklist, getViolations } from '@/api/admin'
+import { getBlacklist, removeBlacklist } from '@/api/admin'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const list = ref([])
-const violations = ref([])
-
-const violationTypeMap = {
-  no_show: '预约爽约', overstay: '超时滞留', trespass: '越权进入',
-  duplicate: '恶意重复预约', absence: '活动缺席',
-}
-const severityType = (s) => ({ minor: 'info', major: 'warning', critical: 'danger' }[s] || 'info')
 
 function formatDate(date) {
   if (!date) return '-'
@@ -87,15 +55,6 @@ async function fetchList() {
   }
 }
 
-async function fetchViolations() {
-  try {
-    const res = await getViolations()
-    violations.value = res.items || res || []
-  } catch {
-    violations.value = []
-  }
-}
-
 async function handleRemove(row) {
   try {
     await ElMessageBox.confirm(`确定将 ${row.user?.name || row.name} 移出黑名单？`, '确认')
@@ -105,7 +64,7 @@ async function handleRemove(row) {
   } catch {}
 }
 
-onMounted(() => { fetchList(); fetchViolations() })
+onMounted(() => { fetchList() })
 </script>
 
 <style scoped>

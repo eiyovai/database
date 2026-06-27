@@ -37,7 +37,9 @@ public class ReportController : ControllerBase
     [Authorize(Roles = "admin,security")]
     public async Task<ActionResult<List<Report>>> GetList([FromQuery] string? status)
     {
-        var query = _db.Reports.AsQueryable();
+        var query = _db.Reports
+            .Include(r => r.Reporter)
+            .AsQueryable();
         if (!string.IsNullOrEmpty(status))
             query = query.Where(r => r.Status == status);
         return Ok(await query.ToListAsync());

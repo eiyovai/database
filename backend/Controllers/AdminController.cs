@@ -82,29 +82,6 @@ public class AdminController : ControllerBase
         return Ok(new { message = "已移出黑名单" });
     }
 
-    // === Violations ===
-    [HttpGet("violations")]
-    public async Task<ActionResult> GetViolations()
-    {
-        var violations = await _db.ViolationRecords
-            .Include(v => v.User)
-            .OrderByDescending(v => v.CreatedAt)
-            .Select(v => new
-            {
-                v.Id,
-                UserName = v.User.Name,
-                v.ViolationType,
-                v.Description,
-                v.Location,
-                v.Severity,
-                v.SourceType,
-                v.OccurredAt,
-                v.CreatedAt,
-            })
-            .ToListAsync();
-        return Ok(violations);
-    }
-
     // === Schedules ===
     [HttpGet("schedules")]
     public async Task<ActionResult<List<StaffSchedule>>> GetSchedules()

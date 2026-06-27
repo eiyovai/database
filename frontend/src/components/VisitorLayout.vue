@@ -84,7 +84,7 @@ const currentRoute = computed(() => route.path)
 
 function handleLogout() {
   authStore.logout()
-  router.push('/')
+  router.push('/login')
 }
 </script>
 

@@ -65,16 +65,67 @@ public class ActivityService : IActivityService
                 r.ActivityId == request.ActivityId && r.UserId == userId))
             throw new InvalidOperationException("您已报名该活动");
 
+        var user = await _db.Users.FindAsync(userId)
+            ?? throw new KeyNotFoundException("用户不存在");
+
         var registration = new ActivityRegistration
         {
             ActivityId = request.ActivityId,
             UserId = userId,
-            VisitorName = (await _db.Users.FindAsync(userId))?.Name ?? "",
-            VisitorPhone = (await _db.Users.FindAsync(userId))?.Phone ?? "",
+            VisitorName = user.Name,
+            VisitorPhone = user.Phone,
         };
 
         activity.CurrentCount++;
         _db.ActivityRegistrations.Add(registration);
+
+        // 自动创建关联的入校预约（报名活动即获得入校资格）
+        var alreadyHasReservation = await _db.Reservations
+            .AnyAsync(r => r.UserId == userId && r.VisitDate == activity.StartTime.Date
+                && r.Status != "cancelled" && r.Status != "rejected");
+        if (!alreadyHasReservation)
+        {
+            var last = await _db.Reservations
+                .OrderByDescending(r => r.Id)
+                .Select(r => r.ReservationNo)
+                .FirstOrDefaultAsync();
+
+            var seq = 1;
+            if (last != null)
+            {
+                var todayPrefix = $"R{DateTime.Now:yyyyMMdd}";
+                if (last.StartsWith(todayPrefix))
+                    seq = int.Parse(last[^4..]) + 1;
+            }
+
+            // 根据活动时间推算时段
+            var hour = activity.StartTime.Hour;
+            var timeSlot = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "full_day";
+
+            // 获取访客类型
+            var visitor = await _db.Visitors.FirstOrDefaultAsync(v => v.UserId == userId);
+            var visitorType = visitor?.VisitorType ?? "tourist";
+
+            var reservation = new Reservation
+            {
+                UserId = userId,
+                ReservationNo = $"R{DateTime.Now:yyyyMMdd}{seq:D4}",
+                VisitorType = visitorType,
+                VisitorName = user.Name,
+                VisitorPhone = user.Phone,
+                VisitDate = activity.StartTime.Date,
+                TimeSlot = timeSlot,
+                Companions = 0,
+                StayDuration = "activity",
+                Purpose = $"参加活动：{activity.Title}",
+                Status = "approved",       // 报名活动自动通过
+                ReviewerId = 1,            // 系统自动审核
+                ReviewedAt = DateTime.UtcNow,
+            };
+
+            _db.Reservations.Add(reservation);
+        }
+
         await _db.SaveChangesAsync();
     }
 

@@ -25,11 +25,11 @@
               size="large"
             >
               <el-form-item label="姓名" prop="name">
-                <el-input v-model="form.name" placeholder="请输入您的姓名" />
+                <el-input v-model="form.name" placeholder="请输入您的姓名" :disabled="authStore.isLoggedIn" />
               </el-form-item>
 
               <el-form-item label="手机号" prop="phone">
-                <el-input v-model="form.phone" placeholder="请输入手机号" />
+                <el-input v-model="form.phone" placeholder="请输入手机号" :disabled="authStore.isLoggedIn" />
               </el-form-item>
 
               <el-form-item label="访客类型" prop="visitorType">
@@ -166,7 +166,14 @@ async function fetchCampusStatus() {
   }
 }
 
-onMounted(fetchCampusStatus)
+onMounted(() => {
+  fetchCampusStatus()
+  // 登录用户自动填充姓名和手机号，防止填写他人信息
+  if (authStore.isLoggedIn && authStore.userInfo) {
+    form.name = authStore.userInfo.name || ''
+    form.phone = authStore.userInfo.phone || ''
+  }
+})
 
 const form = reactive({
   name: '',

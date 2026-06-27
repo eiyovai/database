@@ -51,6 +51,9 @@ export function getViolations(params) {
   return request.get('/violations', { params })
 }
 
+// 获取违规记录列表（别名，兼容新版组件调用）
+export const getViolationList = getViolations
+
 // === 排班管理 ===
 
 // 获取排班列表

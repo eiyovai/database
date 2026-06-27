@@ -29,6 +29,12 @@ public class ReservationService : IReservationService
                 $"您已被列入黑名单（{bl.Reason}），{bl.ExpiresAt:yyyy-MM-dd} 前无法预约。如有疑问请联系管理员。");
         }
 
+        // 校验姓名和手机号与当前用户一致
+        var user = await _db.Users.FindAsync(userId)
+            ?? throw new KeyNotFoundException("用户不存在");
+        if (request.Name != user.Name || request.Phone != user.Phone)
+            throw new InvalidOperationException("姓名或手机号与当前登录用户不匹配");
+
         var last = await _db.Reservations
             .OrderByDescending(r => r.Id)
             .Select(r => r.ReservationNo)

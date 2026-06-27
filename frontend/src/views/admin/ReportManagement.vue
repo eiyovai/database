@@ -37,11 +37,32 @@
               <el-button type="success" size="small" @click="handleReview(row, 'approved')">通过</el-button>
               <el-button type="danger" size="small" @click="handleReview(row, 'rejected')">驳回</el-button>
             </template>
-            <el-button v-else type="primary" size="small" text>详情</el-button>
+            <el-button v-else type="primary" size="small" text @click="showDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 举报详情弹窗 -->
+    <el-dialog v-model="detailVisible" title="举报详情" width="600px">
+      <template v-if="detailRow">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="举报人">{{ detailRow.reporter?.name || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="举报对象">{{ detailRow.targetName }}</el-descriptions-item>
+          <el-descriptions-item label="违规类型">{{ violationTypeMap[detailRow.violationType] || detailRow.violationType }}</el-descriptions-item>
+          <el-descriptions-item label="发生地点">{{ detailRow.location }}</el-descriptions-item>
+          <el-descriptions-item label="发生时间">{{ detailRow.occurredAt || detailRow.time || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="detailRow.status === 'pending' ? 'warning' : detailRow.status === 'approved' ? 'success' : 'info'" size="small">
+              {{ detailRow.status === 'pending' ? '待审核' : detailRow.status === 'approved' ? '已通过' : '已驳回' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" :span="2">{{ detailRow.description }}</el-descriptions-item>
+          <el-descriptions-item v-if="detailRow.reviewRemark" label="审核备注" :span="2">{{ detailRow.reviewRemark }}</el-descriptions-item>
+          <el-descriptions-item v-if="detailRow.reviewedAt" label="审核时间" :span="2">{{ detailRow.reviewedAt }}</el-descriptions-item>
+        </el-descriptions>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -52,6 +73,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const activeTab = ref('pending')
 const reports = ref([])
+const detailVisible = ref(false)
+const detailRow = ref(null)
 
 const violationTypeMap = {
   trespass: '越权进入', harassment: '骚扰行为', damage: '损坏公物',
@@ -75,6 +98,11 @@ async function handleReview(row, action) {
     ElMessage.success(`已${text}`)
     await fetchReports()
   } catch {}
+}
+
+function showDetail(row) {
+  detailRow.value = row
+  detailVisible.value = true
 }
 
 onMounted(fetchReports)
