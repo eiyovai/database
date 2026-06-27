@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import dayjs from 'dayjs'
@@ -81,6 +81,18 @@ const currentTime = ref(dayjs().format('YYYY-MM-DD HH:mm:ss'))
 let timer = null
 
 const currentRoute = computed(() => route.path)
+
+// 非安保角色自动跳转
+watch(
+  () => authStore.userRole,
+  (role) => {
+    if (role && role !== 'security') {
+      const dashboard = { admin: '/admin/dashboard', visitor: '/visitor/reservation', staff: '/visitor/reservation' }
+      router.replace(dashboard[role] || '/')
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   timer = setInterval(() => {

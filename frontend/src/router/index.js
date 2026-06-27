@@ -21,30 +21,37 @@ const routes = [
   {
     path: '/visitor',
     component: () => import('@/components/VisitorLayout.vue'),
+    meta: { role: 'visitor' },  // 访客端仅限 visitor 角色
     children: [
       {
         path: 'reservation',
         name: 'Reservation',
         component: () => import('@/views/visitor/Reservation.vue'),
-        meta: { title: '入校预约' },
+        meta: { title: '入校预约', allowGuest: true },
       },
       {
         path: 'activities',
         name: 'Activities',
         component: () => import('@/views/visitor/ActivityList.vue'),
-        meta: { title: '校园活动' },
+        meta: { title: '校园活动', allowGuest: true },
       },
       {
         path: 'my-reservations',
         name: 'MyReservations',
         component: () => import('@/views/visitor/MyReservations.vue'),
-        meta: { title: '我的预约', requiresAuth: true },
+        meta: { title: '我的预约', requiresAuth: true, role: 'visitor' },
       },
       {
         path: 'profile',
         name: 'VisitorProfile',
         component: () => import('@/views/visitor/VisitorProfile.vue'),
-        meta: { title: '个人中心', requiresAuth: true },
+        meta: { title: '个人中心', requiresAuth: true, role: 'visitor' },
+      },
+      {
+        path: 'report',
+        name: 'VisitorReport',
+        component: () => import('@/views/visitor/Report.vue'),
+        meta: { title: '违规举报', requiresAuth: true, role: 'visitor' },
       },
     ],
   },
@@ -175,6 +182,14 @@ const router = createRouter({
   routes,
 })
 
+// 角色 → 默认仪表盘映射
+const roleDashboard = {
+  admin: '/admin/dashboard',
+  security: '/security/entry-check',
+  visitor: '/visitor/reservation',
+  staff: '/visitor/reservation',
+}
+
 // 路由守卫 - 权限控制
 router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title ? `${to.meta.title} - 校园访客管理系统` : '校园访客管理系统'
@@ -191,14 +206,40 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 需要认证
-  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+  const userRole = authStore.userRole
+  const isLoggedIn = authStore.isLoggedIn
+
+  // 需要认证但未登录
+  if (to.meta.requiresAuth && !isLoggedIn) {
     return next({ path: '/login', query: { redirect: to.fullPath } })
   }
 
-  // 角色权限校验
-  if (to.meta.role && authStore.userRole !== to.meta.role) {
-    return next({ path: '/login' })
+  // 角色权限校验：路由声明的 role 与用户角色不匹配
+  if (to.meta.role && userRole !== to.meta.role) {
+    // 如果是访客端公开页面（allowGuest），未登录用户可以访问
+    if (to.meta.allowGuest && !isLoggedIn) {
+      return next()
+    }
+    // 已登录用户角色不匹配 → 跳转到自己的仪表盘
+    if (isLoggedIn) {
+      return next(roleDashboard[userRole] || '/')
+    }
+    // 未登录用户访问需要特定角色的页面 → 去登录
+    return next({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  // 额外防护：已登录的 admin/security 不得访问 /visitor 开头的页面
+  if (isLoggedIn && (userRole === 'admin' || userRole === 'security')) {
+    if (to.path.startsWith('/visitor')) {
+      return next(roleDashboard[userRole])
+    }
+  }
+
+  // 额外防护：已登录的 visitor 不得访问 /admin 或 /security 开头的页面
+  if (isLoggedIn && userRole === 'visitor') {
+    if (to.path.startsWith('/admin') || to.path.startsWith('/security')) {
+      return next(roleDashboard.visitor)
+    }
   }
 
   next()

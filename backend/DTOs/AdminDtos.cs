@@ -52,10 +52,26 @@ public class AddBlacklistRequest
     public string Reason { get; set; } = string.Empty;
 }
 
+public class WeeklyTrendItem
+{
+    public string Date { get; set; } = string.Empty;
+    public int Reservations { get; set; }
+    public int Visits { get; set; }
+}
+
+public class VisitorDistributionItem
+{
+    public string Type { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
 public class DashboardStatsResponse
 {
     public int TodayReservations { get; set; }
     public int CurrentVisitors { get; set; }
     public int PendingReviews { get; set; }
     public int BlacklistCount { get; set; }
+    public List<WeeklyTrendItem> WeeklyTrend { get; set; } = new();
+    public List<VisitorDistributionItem> VisitorDistribution { get; set; } = new();
 }

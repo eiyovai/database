@@ -55,17 +55,13 @@
       <el-col :span="16">
         <el-card shadow="never">
           <template #header>本周客流趋势</template>
-          <div class="chart-placeholder">
-            <p>近7日预约/到访人数趋势图（待集成 ECharts）</p>
-          </div>
+          <v-chart :option="trendOption" style="height: 320px" autoresize />
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <template #header>访客类型分布</template>
-          <div class="chart-placeholder">
-            <p>访客类型饼图（待集成 ECharts）</p>
-          </div>
+          <v-chart :option="pieOption" style="height: 320px" autoresize />
         </el-card>
       </el-col>
     </el-row>
@@ -96,15 +92,71 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getDashboardStats } from '@/api/admin'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart, PieChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+
+use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
 const stats = ref({
   todayReservations: 0,
   currentVisitors: 0,
   pendingReviews: 0,
   blacklistCount: 0,
+  weeklyTrend: [],
+  visitorDistribution: [],
 })
+
+// 周趋势折线图配置
+const trendOption = computed(() => ({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['预约人数', '实际到访'], bottom: 0 },
+  grid: { left: '3%', right: '4%', bottom: '12%', top: '8%', containLabel: true },
+  xAxis: {
+    type: 'category',
+    data: stats.value.weeklyTrend?.map(i => i.date) || [],
+  },
+  yAxis: { type: 'value', minInterval: 1 },
+  series: [
+    {
+      name: '预约人数',
+      type: 'line',
+      smooth: true,
+      data: stats.value.weeklyTrend?.map(i => i.reservations) || [],
+      itemStyle: { color: '#409eff' },
+      areaStyle: { color: 'rgba(64,158,255,0.1)' },
+    },
+    {
+      name: '实际到访',
+      type: 'line',
+      smooth: true,
+      data: stats.value.weeklyTrend?.map(i => i.visits) || [],
+      itemStyle: { color: '#67c23a' },
+      areaStyle: { color: 'rgba(103,194,58,0.1)' },
+    },
+  ],
+}))
+
+// 访客类型饼图配置
+const pieOption = computed(() => ({
+  tooltip: { trigger: 'item', formatter: '{b}: {c}人 ({d}%)' },
+  legend: { orient: 'vertical', left: 'left', top: 'center' },
+  series: [{
+    type: 'pie',
+    radius: ['45%', '75%'],
+    center: ['55%', '50%'],
+    label: { show: false },
+    emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+    data: stats.value.visitorDistribution?.map(i => ({
+      name: i.label,
+      value: i.count,
+    })) || [],
+  }],
+}))
 
 async function fetchStats() {
   try {
@@ -114,6 +166,8 @@ async function fetchStats() {
       currentVisitors: res.currentVisitors || 0,
       pendingReviews: res.pendingReviews || 0,
       blacklistCount: res.blacklistCount || 0,
+      weeklyTrend: res.weeklyTrend || [],
+      visitorDistribution: res.visitorDistribution || [],
     }
   } catch {
     // 保持默认 0 值

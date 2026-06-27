@@ -4,10 +4,14 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import VChart from 'vue-echarts'
 import App from './App.vue'
 import router from './router'
 
 const app = createApp(App)
+
+// 注册 ECharts 图表组件
+app.component('v-chart', VChart)
 
 // 注册所有 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

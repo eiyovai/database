@@ -31,6 +31,10 @@
             <el-icon><User /></el-icon>
             个人中心
           </el-menu-item>
+          <el-menu-item index="/visitor/report">
+            <el-icon><WarningFilled /></el-icon>
+            违规举报
+          </el-menu-item>
         </el-menu>
         <div class="user-area">
           <template v-if="authStore.isLoggedIn">
@@ -72,7 +76,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -81,6 +85,18 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const currentRoute = computed(() => route.path)
+
+// 非访客角色自动跳转到对应仪表盘
+const roleDashboard = { admin: '/admin/dashboard', security: '/security/entry-check' }
+watch(
+  () => authStore.userRole,
+  (role) => {
+    if (role && role !== 'visitor' && role !== 'staff') {
+      router.replace(roleDashboard[role] || '/')
+    }
+  },
+  { immediate: true }
+)
 
 function handleLogout() {
   authStore.logout()

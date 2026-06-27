@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -110,6 +110,18 @@ const isCollapse = ref(false)
 const pendingCount = ref(0)
 
 const currentRoute = computed(() => route.path)
+
+// 非管理员角色自动跳转
+watch(
+  () => authStore.userRole,
+  (role) => {
+    if (role && role !== 'admin') {
+      const dashboard = { security: '/security/entry-check', visitor: '/visitor/reservation', staff: '/visitor/reservation' }
+      router.replace(dashboard[role] || '/')
+    }
+  },
+  { immediate: true }
+)
 
 function toggleCollapse() {
   isCollapse.value = !isCollapse.value

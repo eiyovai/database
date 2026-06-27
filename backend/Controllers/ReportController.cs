@@ -34,15 +34,24 @@ public class ReportController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "admin,security")]
-    public async Task<ActionResult<List<Report>>> GetList([FromQuery] string? status)
+    [Authorize(Roles = "admin,security,visitor")]
+    public async Task<ActionResult<List<Report>>> GetList([FromQuery] string? status, [FromQuery] bool? my)
     {
+        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var isAdminOrSecurity = User.IsInRole("admin") || User.IsInRole("security");
+
         var query = _db.Reports
             .Include(r => r.Reporter)
             .AsQueryable();
+
+        // 访客只能看自己的举报
+        if (!isAdminOrSecurity || my == true)
+            query = query.Where(r => r.ReporterId == userId);
+
         if (!string.IsNullOrEmpty(status))
             query = query.Where(r => r.Status == status);
-        return Ok(await query.ToListAsync());
+
+        return Ok(await query.OrderByDescending(r => r.CreatedAt).ToListAsync());
     }
 
     [HttpPut("{id}/review")]

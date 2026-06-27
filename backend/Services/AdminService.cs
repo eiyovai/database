@@ -241,6 +241,57 @@ public class AdminService : IAdminService
     public async Task<DashboardStatsResponse> GetDashboardStatsAsync()
     {
         var today = DateTime.Today;
+        var sevenDaysAgo = today.AddDays(-6);
+
+        // 近7日预约趋势（按 VisitDate 分组）
+        var reservationsByDay = await _db.Reservations
+            .Where(r => r.VisitDate >= sevenDaysAgo && r.VisitDate <= today)
+            .GroupBy(r => r.VisitDate)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // 近7日实际到访趋势（按入校时间分组）
+        var visitsByDay = await _db.EntryExitRecords
+            .Where(r => r.EntryTime != null && r.EntryTime.Value.Date >= sevenDaysAgo && r.EntryTime.Value.Date <= today)
+            .GroupBy(r => r.EntryTime.Value.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // 访客类型分布
+        var visitorGroups = await _db.Visitors
+            .GroupBy(v => v.VisitorType)
+            .Select(g => new { Type = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var typeLabelMap = new Dictionary<string, string>
+        {
+            ["parent"] = "家长",
+            ["alumni"] = "校友",
+            ["tourist"] = "普通游客",
+            ["study_group"] = "研学团队",
+            ["partner"] = "合作单位",
+        };
+
+        var visitorDistribution = visitorGroups.Select(g => new VisitorDistributionItem
+        {
+            Type = g.Type,
+            Label = typeLabelMap.TryGetValue(g.Type, out var label) ? label : g.Type,
+            Count = g.Count,
+        }).ToList();
+
+        // 构建完整的7天数据（补零）
+        var weeklyTrend = new List<WeeklyTrendItem>();
+        for (int i = 0; i < 7; i++)
+        {
+            var date = sevenDaysAgo.AddDays(i);
+            weeklyTrend.Add(new WeeklyTrendItem
+            {
+                Date = date.ToString("MM-dd"),
+                Reservations = reservationsByDay.FirstOrDefault(r => r.Date == date)?.Count ?? 0,
+                Visits = visitsByDay.FirstOrDefault(v => v.Date == date)?.Count ?? 0,
+            });
+        }
+
         return new DashboardStatsResponse
         {
             TodayReservations = await _db.Reservations.CountAsync(r => r.VisitDate == today),
@@ -248,6 +299,8 @@ public class AdminService : IAdminService
                 r.EntryTime != null && r.ExitTime == null),
             PendingReviews = await _db.Reservations.CountAsync(r => r.Status == "pending"),
             BlacklistCount = await _db.Blacklists.CountAsync(b => b.IsActive),
+            WeeklyTrend = weeklyTrend,
+            VisitorDistribution = visitorDistribution,
         };
     }
 }

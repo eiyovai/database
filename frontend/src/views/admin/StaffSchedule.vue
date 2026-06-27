@@ -23,10 +23,12 @@
         </el-table-column>
         <el-table-column prop="location" label="工作地点" width="120" />
         <el-table-column prop="task" label="工作内容" min-width="160" show-overflow-tooltip />
-        <el-table-column label="操作" width="120" fixed="right" align="center">
+        <el-table-column label="操作" width="140" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" size="small" text @click="showDialog(row)">编辑</el-button>
-            <el-button type="danger" size="small" text @click="handleDelete(row)">删除</el-button>
+            <div class="action-btns">
+              <el-button type="primary" size="small" link @click="showDialog(row)">编辑</el-button>
+              <el-button type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -136,4 +138,11 @@ onMounted(fetchSchedules)
 .schedule-page { max-width: 1400px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .page-title { font-size: 20px; margin: 0; }
+
+.action-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
 </style>
