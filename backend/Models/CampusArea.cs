@@ -21,6 +21,18 @@ public class CampusArea
     [Required, MaxLength(20)]
     public string AccessLevel { get; set; } = "public";
 
+    /// <summary>默认上午开放时间（可被 OpenRule 覆盖）</summary>
+    public TimeSpan? MorningStart { get; set; }
+
+    /// <summary>默认上午关闭时间</summary>
+    public TimeSpan? MorningEnd { get; set; }
+
+    /// <summary>默认下午开放时间</summary>
+    public TimeSpan? AfternoonStart { get; set; }
+
+    /// <summary>默认下午关闭时间（用于违规检测）</summary>
+    public TimeSpan? AfternoonEnd { get; set; }
+
     [MaxLength(500)]
     public string? Description { get; set; }
 
@@ -30,4 +42,5 @@ public class CampusArea
 
     // Navigation
     public ICollection<AreaPermission> AreaPermissions { get; set; } = new List<AreaPermission>();
+    public ICollection<OpenRule> OpenRules { get; set; } = new List<OpenRule>();
 }

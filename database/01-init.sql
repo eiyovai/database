@@ -51,7 +51,7 @@ CREATE TABLE [dbo].[Visitors] (
     [Affiliation]   NVARCHAR(100)   NULL,                           -- 所属单位
     [VisitorType]   VARCHAR(20)     NOT NULL DEFAULT 'tourist'      -- 访客类型
         CHECK ([VisitorType] IN ('parent', 'alumni', 'tourist', 'study_group', 'partner')),
-    [EmergencyContact]  VARCHAR(20) NULL,                           -- 紧急联系人
+    [EmergencyContact]  NVARCHAR(50) NULL,                           -- 紧急联系人
     [EmergencyPhone]    VARCHAR(20) NULL,                           -- 紧急联系电话
     [Remarks]       NVARCHAR(500)   NULL,                           -- 备注
 
@@ -74,6 +74,10 @@ CREATE TABLE [dbo].[CampusAreas] (
     [AccessLevel]   VARCHAR(20)     NOT NULL DEFAULT 'public'       -- 开放等级
         CHECK ([AccessLevel] IN ('public', 'restricted', 'forbidden')),
     [Description]   NVARCHAR(500)   NULL,                           -- 区域描述
+    [MorningStart]  TIME            NULL,                           -- 默认上午开放时间
+    [MorningEnd]    TIME            NULL,                           -- 默认上午关闭时间
+    [AfternoonStart] TIME           NULL,                           -- 默认下午开放时间
+    [AfternoonEnd]  TIME            NULL,                           -- 默认下午关闭时间
     [IsActive]      BIT             NOT NULL DEFAULT 1,             -- 是否启用
     [CreatedAt]     DATETIME2       NOT NULL DEFAULT GETDATE(),
 
@@ -123,6 +127,7 @@ IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Op
 BEGIN
 CREATE TABLE [dbo].[OpenRules] (
     [Id]            INT IDENTITY(1,1) PRIMARY KEY,
+    [AreaId]        INT             NULL,                           -- 关联区域（NULL=全校通用）
     [DateType]      VARCHAR(20)     NOT NULL                        -- 日期类型
         CHECK ([DateType] IN ('weekday', 'weekend', 'holiday', 'exam', 'custom')),
     [StartDate]     DATE            NOT NULL,                       -- 开始日期
@@ -137,7 +142,9 @@ CREATE TABLE [dbo].[OpenRules] (
     [IsActive]      BIT             NOT NULL DEFAULT 1,             -- 是否启用
     [Remark]        NVARCHAR(500)   NULL,                           -- 备注
     [CreatedAt]     DATETIME2       NOT NULL DEFAULT GETDATE(),
-    [UpdatedAt]     DATETIME2       NOT NULL DEFAULT GETDATE()
+    [UpdatedAt]     DATETIME2       NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT [FK_OpenRules_Areas] FOREIGN KEY ([AreaId]) REFERENCES [dbo].[CampusAreas]([Id]) ON DELETE SET NULL
 )
 END
 GO

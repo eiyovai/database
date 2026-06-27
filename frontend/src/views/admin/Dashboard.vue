@@ -74,22 +74,21 @@
     <el-row :gutter="16" style="margin-top: 16px">
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header>热门参观区域 Top5</template>
-          <el-table :data="hotAreas" size="small">
-            <el-table-column prop="rank" label="排名" width="60" />
-            <el-table-column prop="name" label="区域" />
-            <el-table-column prop="count" label="访问人数" />
-          </el-table>
+          <template #header>系统概览</template>
+          <div style="padding: 20px; text-align: center; color: #909399;">
+            <p>今日预约 {{ stats.todayReservations }} 人 | 在校 {{ stats.currentVisitors }} 人</p>
+            <p>待审核 {{ stats.pendingReviews }} 条 | 黑名单 {{ stats.blacklistCount }} 人</p>
+          </div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header>各校门客流量</template>
-          <el-table :data="gateStats" size="small">
-            <el-table-column prop="gate" label="校门" />
-            <el-table-column prop="entryCount" label="入校人数" />
-            <el-table-column prop="exitCount" label="离校人数" />
-          </el-table>
+          <template #header>快捷操作</template>
+          <div style="padding: 20px; text-align: center;">
+            <el-button type="primary" @click="$router.push('/admin/review')">预约审核</el-button>
+            <el-button type="success" @click="$router.push('/admin/areas')">区域管理</el-button>
+            <el-button type="warning" @click="$router.push('/admin/open-rules')">开放规则</el-button>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -110,28 +109,18 @@ const stats = ref({
 async function fetchStats() {
   try {
     const res = await getDashboardStats()
-    stats.value = res
+    stats.value = {
+      todayReservations: res.todayReservations || 0,
+      currentVisitors: res.currentVisitors || 0,
+      pendingReviews: res.pendingReviews || 0,
+      blacklistCount: res.blacklistCount || 0,
+    }
   } catch {
     // 保持默认 0 值
   }
 }
 
 onMounted(fetchStats)
-
-const hotAreas = [
-  { rank: 1, name: '校史馆', count: 320 },
-  { rank: 2, name: '图书馆', count: 280 },
-  { rank: 3, name: '操场/体育馆', count: 210 },
-  { rank: 4, name: '理工楼实验室', count: 156 },
-  { rank: 5, name: '学生食堂', count: 145 },
-]
-
-const gateStats = [
-  { gate: '南门（正门）', entryCount: 520, exitCount: 480 },
-  { gate: '北门', entryCount: 230, exitCount: 210 },
-  { gate: '东门', entryCount: 180, exitCount: 165 },
-  { gate: '西门', entryCount: 89, exitCount: 92 },
-]
 </script>
 
 <style scoped>

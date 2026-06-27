@@ -4,7 +4,7 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="summary-item">
-            <div class="num primary">89</div>
+            <div class="num primary">{{ stats.currentVisitors }}</div>
             <div class="label">当前在校访客</div>
           </div>
         </el-card>
@@ -12,7 +12,7 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="summary-item">
-            <div class="num success">156</div>
+            <div class="num success">{{ stats.todayEntries }}</div>
             <div class="label">今日累计入校</div>
           </div>
         </el-card>
@@ -20,7 +20,7 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="summary-item">
-            <div class="num warning">500</div>
+            <div class="num warning">{{ stats.maxCapacity }}</div>
             <div class="label">今日容量上限</div>
           </div>
         </el-card>
@@ -33,19 +33,31 @@
       </template>
 
       <el-table :data="visitors" stripe>
-        <el-table-column prop="name" label="姓名" width="100" />
-        <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="visitorType" label="访客类型" width="100">
-          <template #default="{ row }">{{ typeMap[row.visitorType] }}</template>
+        <el-table-column label="姓名" width="100">
+          <template #default="{ row }">{{ row.reservation?.visitorName || row.visitorName }}</template>
         </el-table-column>
-        <el-table-column prop="entryTime" label="入校时间" width="150" />
-        <el-table-column prop="entryGate" label="入校校门" width="100" />
-        <el-table-column prop="expectedExit" label="预计离校" width="120" />
+        <el-table-column label="手机号" width="130">
+          <template #default="{ row }">{{ row.reservation?.visitorPhone || row.visitorPhone }}</template>
+        </el-table-column>
+        <el-table-column label="访客类型" width="100">
+          <template #default="{ row }">{{ typeMap[row.reservation?.visitorType] || typeMap[row.visitorType] }}</template>
+        </el-table-column>
+        <el-table-column label="入校时间" width="160">
+          <template #default="{ row }">{{ row.entryTime }}</template>
+        </el-table-column>
+        <el-table-column label="入校校门" width="100">
+          <template #default="{ row }">{{ row.entryGate?.name || row.entryGate }}</template>
+        </el-table-column>
+        <el-table-column label="预计离校" width="120">
+          <template #default="{ row }">{{ row.reservation?.stayDuration || '-' }}</template>
+        </el-table-column>
         <el-table-column label="停留时长" width="100">
-          <template #default="{ row }">{{ row.duration || '计算中' }}</template>
+          <template #default="{ row }">
+            {{ row.entryTime ? calcDuration(row.entryTime) : '-' }}
+          </template>
         </el-table-column>
         <el-table-column label="状态" width="80">
-          <template #default="{ row }">
+          <template #default>
             <el-tag type="success" size="small">在校</el-tag>
           </template>
         </el-table-column>
@@ -55,28 +67,62 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { getCurrentVisitors } from '@/api/entryexit'
+import request from '@/api/request'
 
 const keyword = ref('')
 const visitors = ref([])
+const stats = ref({ currentVisitors: 0, todayEntries: 0, maxCapacity: 0 })
 
 const typeMap = { parent: '家长', alumni: '校友', tourist: '游客', study_group: '研学团', partner: '合作单位' }
+
+function calcDuration(entryTime) {
+  if (!entryTime) return '-'
+  const diff = Date.now() - new Date(entryTime).getTime()
+  const hours = Math.floor(diff / 3600000)
+  const mins = Math.floor((diff % 3600000) / 60000)
+  return hours > 0 ? `${hours}h ${mins}min` : `${mins}min`
+}
+
+async function fetchStats() {
+  try {
+    const [campus, entryStats] = await Promise.all([
+      request.get('/public/campus-status').catch(() => ({})),
+      request.get('/entry-exit/stats').catch(() => ({}))
+    ])
+    stats.value.currentVisitors = entryStats.currentVisitors || campus.currentVisitors || 0
+    stats.value.maxCapacity = campus.maxCapacity || 500
+    stats.value.todayEntries = entryStats.todayEntries || 0
+  } catch { /* 静默失败 */ }
+}
 
 async function fetchVisitors() {
   try {
     const res = await getCurrentVisitors()
-    visitors.value = res.items || res
+    const items = Array.isArray(res) ? res : (res.items || [])
+    visitors.value = items
   } catch {
-    visitors.value = [
-      { name: '张三', phone: '138****1234', visitorType: 'tourist', entryTime: '2026-06-22 09:15', entryGate: '南门', expectedExit: '12:00', duration: '2h 15min' },
-      { name: '李四', phone: '139****5678', visitorType: 'alumni', entryTime: '2026-06-22 09:30', entryGate: '南门', expectedExit: '16:00', duration: '2h' },
-      { name: '王五', phone: '137****9012', visitorType: 'study_group', entryTime: '2026-06-22 09:45', entryGate: '北门', expectedExit: '15:00', duration: '1h 45min' },
-    ]
+    visitors.value = []
   }
 }
 
-onMounted(fetchVisitors)
+watch(keyword, () => {
+  if (!keyword.value.trim()) {
+    fetchVisitors()
+  } else {
+    visitors.value = visitors.value.filter(v => {
+      const name = v.reservation?.visitorName || v.visitorName || ''
+      const phone = v.reservation?.visitorPhone || v.visitorPhone || ''
+      return name.includes(keyword.value) || phone.includes(keyword.value)
+    })
+  }
+})
+
+onMounted(() => {
+  fetchVisitors()
+  fetchStats()
+})
 </script>
 
 <style scoped>

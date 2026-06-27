@@ -46,6 +46,11 @@ export function removeBlacklist(id) {
   return request.delete(`/blacklist/${id}`)
 }
 
+// 获取违规记录列表
+export function getViolations(params) {
+  return request.get('/violations', { params })
+}
+
 // === 排班管理 ===
 
 // 获取排班列表

@@ -16,7 +16,7 @@
 
     <!-- 预约列表 -->
     <el-table :data="list" v-loading="loading" stripe style="width: 100%">
-      <el-table-column prop="id" label="预约编号" width="100" />
+      <el-table-column prop="reservationNo" label="预约编号" width="130" />
       <el-table-column prop="visitDate" label="参观日期" width="120" />
       <el-table-column prop="timeSlot" label="时段" width="120">
         <template #default="{ row }">
@@ -71,7 +71,7 @@
     <!-- 详情对话框 -->
     <el-dialog v-model="detailVisible" title="预约详情" width="500px">
       <el-descriptions v-if="detail" :column="2" border>
-        <el-descriptions-item label="预约编号">{{ detail.id }}</el-descriptions-item>
+        <el-descriptions-item label="预约编号">{{ detail.reservationNo }}</el-descriptions-item>
         <el-descriptions-item label="访客类型">{{ visitorTypeMap[detail.visitorType] }}</el-descriptions-item>
         <el-descriptions-item label="入校日期">{{ detail.visitDate }}</el-descriptions-item>
         <el-descriptions-item label="时段">{{ timeSlotMap[detail.timeSlot] }}</el-descriptions-item>
@@ -148,15 +148,11 @@ async function fetchReservations() {
       params.status = activeTab.value
     }
     const res = await getMyReservations(params)
-    list.value = res.items || res
-    total.value = res.total || res.length || 0
+    list.value = res.items || []
+    total.value = res.total || 0
   } catch {
-    // 模拟数据
-    list.value = [
-      { id: 'R20260601', visitDate: '2026-06-22', timeSlot: 'morning', visitorType: 'tourist', companions: 2, purpose: '带孩子参观校园', status: 'approved', createdAt: '2026-06-19 10:30' },
-      { id: 'R20260602', visitDate: '2026-06-25', timeSlot: 'afternoon', visitorType: 'alumni', companions: 0, purpose: '回母校看看', status: 'pending', createdAt: '2026-06-19 11:00' },
-    ]
-    total.value = list.value.length
+    list.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }

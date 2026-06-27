@@ -16,7 +16,7 @@ public class ReportController : ControllerBase
     public ReportController(CampusVisitorDbContext db) => _db = db;
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "visitor,security,admin")]
     public async Task<ActionResult> Create([FromBody] CreateReportRequest request)
     {
         var report = new Report
@@ -50,10 +50,66 @@ public class ReportController : ControllerBase
         var report = await _db.Reports.FindAsync(id);
         if (report == null) return NotFound(new { message = "举报不存在" });
 
+        var reviewerId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
         report.Status = request.Status;
         report.ReviewRemark = request.Remark;
-        report.ReviewerId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        report.ReviewerId = reviewerId;
         report.ReviewedAt = DateTime.UtcNow;
+
+        // 审核通过：自动创建违规记录 → 累计次数 → 自动拉黑
+        if (request.Status == "approved")
+        {
+            // 查找被举报用户
+            var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.Name == report.TargetName);
+
+            // 创建违规记录
+            var violation = new ViolationRecord
+            {
+                UserId = targetUser?.Id ?? 0,
+                ViolationType = report.ViolationType,
+                Description = report.Description,
+                OccurredAt = report.OccurredAt,
+                Location = report.Location,
+                Severity = "minor",
+                SourceType = "report",
+                SourceId = report.Id,
+            };
+            _db.ViolationRecords.Add(violation);
+
+            if (targetUser != null)
+            {
+                // 统计该用户累计违规次数
+                var totalViolations = await _db.ViolationRecords
+                    .CountAsync(v => v.UserId == targetUser.Id);
+
+                // 检查是否已在黑名单中
+                var existingBlacklist = await _db.Blacklists
+                    .FirstOrDefaultAsync(b => b.UserId == targetUser.Id && b.IsActive);
+
+                if (existingBlacklist != null)
+                {
+                    // 已在黑名单，更新违规次数
+                    existingBlacklist.ViolationCount = totalViolations;
+                    existingBlacklist.Reason = $"累计违规{totalViolations}次（含：{report.ViolationType}）";
+                }
+                else if (totalViolations >= 3)
+                {
+                    // 累计违规≥3次，自动加入黑名单
+                    _db.Blacklists.Add(new Blacklist
+                    {
+                        UserId = targetUser.Id,
+                        Reason = $"累计违规{totalViolations}次（含：{report.ViolationType}）",
+                        ViolationCount = totalViolations,
+                        OperatorId = reviewerId,
+                        BlacklistedAt = DateTime.UtcNow,
+                        ExpiresAt = DateTime.UtcNow.AddMonths(3), // 3个月后自动解禁
+                        IsActive = true,
+                    });
+                }
+            }
+        }
+
         await _db.SaveChangesAsync();
         return Ok(new { message = "审核完成" });
     }

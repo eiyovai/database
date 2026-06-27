@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- 校园开放预约与访客管理系统 - 完整数据库备份脚本
 -- 适用: 在目标电脑上一次性创建数据库并导入全部数据
 -- 用法: 在 SSMS 中打开此文件，按 F5 执行
@@ -62,6 +62,10 @@ CREATE TABLE [dbo].[CampusAreas] (
     [Type] VARCHAR(20) NOT NULL DEFAULT 'public' CHECK ([Type] IN ('public','academic','office','living','lab','restricted')),
     [AccessLevel] VARCHAR(20) NOT NULL DEFAULT 'public' CHECK ([AccessLevel] IN ('public','restricted','forbidden')),
     [Description] NVARCHAR(500) NULL,
+    [MorningStart] TIME NULL,
+    [MorningEnd] TIME NULL,
+    [AfternoonStart] TIME NULL,
+    [AfternoonEnd] TIME NULL,
     [IsActive] BIT NOT NULL DEFAULT 1,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
     CONSTRAINT [UQ_CampusAreas_Code] UNIQUE ([Code])
@@ -91,6 +95,7 @@ GO
 -- 6. OpenRules 开放规则表
 CREATE TABLE [dbo].[OpenRules] (
     [Id] INT IDENTITY(1,1) PRIMARY KEY,
+    [AreaId] INT NULL,
     [DateType] VARCHAR(20) NOT NULL CHECK ([DateType] IN ('weekday','weekend','holiday','exam','custom')),
     [StartDate] DATE NOT NULL,
     [EndDate] DATE NOT NULL,
@@ -103,7 +108,8 @@ CREATE TABLE [dbo].[OpenRules] (
     [IsActive] BIT NOT NULL DEFAULT 1,
     [Remark] NVARCHAR(500) NULL,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
-    [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETDATE()
+    [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT [FK_OpenRules_Areas] FOREIGN KEY ([AreaId]) REFERENCES [dbo].[CampusAreas]([Id]) ON DELETE SET NULL
 )
 GO
 
@@ -338,20 +344,20 @@ END
 GO
 
 -- ============================================================
--- 测试数据
+-- 种子数据
 -- ============================================================
 
 -- 1. 用户 (10条)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'系统管理员','13800138000','hash123','admin',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'张三','13800138001','hash123','visitor',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'李四','13800138002','hash123','visitor',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'王五','13800138003','hash123','visitor',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'赵六','13800138004','hash123','visitor',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'孙七','13800138005','hash123','visitor',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'安保张三','13900139001','hash123','security',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'安保李四','13900139002','hash123','security',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'讲解员小王','13700137001','hash123','staff',1)
-INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'志愿者小刘','13700137002','hash123','staff',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'系统管理员','13800138000','CHANGE_ME','admin',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'张三','13800138001','CHANGE_ME','visitor',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'李四','13800138002','CHANGE_ME','visitor',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'王五','13800138003','CHANGE_ME','visitor',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'赵六','13800138004','CHANGE_ME','visitor',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'孙七','13800138005','CHANGE_ME','visitor',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'安保张三','13900139001','CHANGE_ME','security',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'安保李四','13900139002','CHANGE_ME','security',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'讲解员小王','13700137001','CHANGE_ME','staff',1)
+INSERT INTO [dbo].[Users] ([Name],[Phone],[PasswordHash],[Role],[IsActive]) VALUES (N'志愿者小刘','13700137002','CHANGE_ME','staff',1)
 GO
 
 -- 2. 访客 (5条)
@@ -398,9 +404,9 @@ INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[Visito
 INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (4,'R202606190003','parent',N'王五','13800138003','2026-06-22','morning',1,'2h',N'参加家长开放日','approved',1,N'审核通过','2026-06-19 09:30','2026-06-18 16:00')
 INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (5,'R202606190004','study_group',N'赵六','13800138004','2026-06-24','full_day',15,'full_day',N'带领研学团队参观实验室','pending',NULL,NULL,NULL,'2026-06-19 11:00')
 INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (6,'R202606190005','partner',N'孙七','13800138005','2026-06-22','morning',2,'4h',N'与合作单位洽谈合作','approved',1,N'审核通过','2026-06-19 08:00','2026-06-17 09:00')
-INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (2,'R202606190006','tourist',N'张三','13800138001','2026-06-20','afternoon',0,'2h',N'测试-已取消','cancelled',1,NULL,'2026-06-19 10:00','2026-06-19 08:00')
+INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (2,'R202606190006','tourist',N'张三','13800138001','2026-06-20','afternoon',0,'2h',N'临时有事取消参观','cancelled',1,NULL,'2026-06-19 10:00','2026-06-19 08:00')
 INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (3,'R202606190007','alumni',N'李四','13800138002','2026-06-19','morning',0,'half_day',N'校友返校日','checked_in',1,N'审核通过','2026-06-18 09:00','2026-06-17 10:00')
-INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (4,'R202606190008','parent',N'王五','13800138003','2026-06-18','morning',1,'2h',N'已离校记录','checked_out',1,N'审核通过','2026-06-17 09:00','2026-06-16 14:00')
+INSERT INTO [dbo].[Reservations] ([UserId],[ReservationNo],[VisitorType],[VisitorName],[VisitorPhone],[VisitDate],[TimeSlot],[Companions],[StayDuration],[Purpose],[Status],[ReviewerId],[ReviewRemark],[ReviewedAt],[CreatedAt]) VALUES (4,'R202606190008','parent',N'王五','13800138003','2026-06-18','morning',1,'2h',N'正常参观离校','checked_out',1,N'审核通过','2026-06-17 09:00','2026-06-16 14:00')
 GO
 
 -- 8. 状态变更日志 (9条)
@@ -421,9 +427,9 @@ INSERT INTO [dbo].[EntryExitRecords] ([ReservationId],[UserId],[EntryTime],[Entr
 GO
 
 -- 10. 活动 (4条)
-INSERT INTO [dbo].[Activities] ([Title],[Location],[Description],[StartTime],[EndTime],[MaxParticipants],[CurrentCount],[Status],[ContactPerson],[ContactPhone],[CreatedBy]) VALUES (N'校史馆公益讲解',N'校史馆',N'由专业讲解员带领参观校史馆。','2026-06-22 10:00','2026-06-22 11:30',50,25,'open',N'讲解员小王','13700137001',1)
-INSERT INTO [dbo].[Activities] ([Title],[Location],[Description],[StartTime],[EndTime],[MaxParticipants],[CurrentCount],[Status],[ContactPerson],[ContactPhone],[CreatedBy]) VALUES (N'实验室开放参观',N'理工楼A座3楼',N'参观最新科研实验室。','2026-06-23 14:00','2026-06-23 16:00',50,45,'open',N'志愿者小刘','13700137002',1)
-INSERT INTO [dbo].[Activities] ([Title],[Location],[Description],[StartTime],[EndTime],[MaxParticipants],[CurrentCount],[Status],[ContactPerson],[ContactPhone],[CreatedBy]) VALUES (N'招生宣讲会',N'学术报告厅',N'招生老师解答报考问题。','2026-06-25 09:00','2026-06-25 11:00',200,120,'open',N'系统管理员','13800138000',1)
+INSERT INTO [dbo].[Activities] ([Title],[Location],[Description],[StartTime],[EndTime],[MaxParticipants],[CurrentCount],[Status],[ContactPerson],[ContactPhone],[CreatedBy]) VALUES (N'校史馆公益讲解',N'校史馆',N'由专业讲解员带领参观校史馆。','2026-06-22 10:00','2026-06-22 11:30',50,0,'open',N'讲解员小王','13700137001',1)
+INSERT INTO [dbo].[Activities] ([Title],[Location],[Description],[StartTime],[EndTime],[MaxParticipants],[CurrentCount],[Status],[ContactPerson],[ContactPhone],[CreatedBy]) VALUES (N'实验室开放参观',N'理工楼A座3楼',N'参观最新科研实验室。','2026-06-23 14:00','2026-06-23 16:00',50,0,'open',N'志愿者小刘','13700137002',1)
+INSERT INTO [dbo].[Activities] ([Title],[Location],[Description],[StartTime],[EndTime],[MaxParticipants],[CurrentCount],[Status],[ContactPerson],[ContactPhone],[CreatedBy]) VALUES (N'招生宣讲会',N'学术报告厅',N'招生老师解答报考问题。','2026-06-25 09:00','2026-06-25 11:00',200,0,'open',N'系统管理员','13800138000',1)
 INSERT INTO [dbo].[Activities] ([Title],[Location],[Description],[StartTime],[EndTime],[MaxParticipants],[CurrentCount],[Status],[ContactPerson],[ContactPhone],[CreatedBy]) VALUES (N'社团展示活动',N'操场',N'各大学生社团展示校园文化。','2026-06-28 09:00','2026-06-28 16:00',500,0,'open',N'系统管理员','13800138000',1)
 GO
 
@@ -437,9 +443,19 @@ INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId],[UserId],[VisitorName],[
 INSERT INTO [dbo].[ActivityRegistrations] ([ActivityId],[UserId],[VisitorName],[VisitorPhone],[Companions],[Status]) VALUES (3,5,N'赵六','13800138004',15,'registered')
 GO
 
+-- 根据实际报名记录更新 CurrentCount
+UPDATE [dbo].[Activities]
+SET [CurrentCount] = (
+    SELECT COUNT(*) FROM [dbo].[ActivityRegistrations]
+    WHERE [ActivityId] = [Activities].[Id] AND [Status] = 'registered'
+)
+GO
+
 -- 12. 违规记录 (2条)
 INSERT INTO [dbo].[ViolationRecords] ([UserId],[ViolationType],[Description],[OccurredAt],[Location],[Severity],[SourceType]) VALUES (2,'no_show',N'预约2026-06-15上午时段未到校','2026-06-15',NULL,'minor','system')
 INSERT INTO [dbo].[ViolationRecords] ([UserId],[ViolationType],[Description],[OccurredAt],[Location],[Severity],[SourceType]) VALUES (5,'overstay',N'超时滞留2小时','2026-06-16',N'理工楼','major','manual')
+INSERT INTO [dbo].[ViolationRecords] ([UserId],[ViolationType],[Description],[OccurredAt],[Location],[Severity],[SourceType]) VALUES (5,'no_show',N'预约2026-06-10上午时段未到校','2026-06-10',NULL,'minor','system')
+INSERT INTO [dbo].[ViolationRecords] ([UserId],[ViolationType],[Description],[OccurredAt],[Location],[Severity],[SourceType]) VALUES (5,'no_show',N'预约2026-06-12下午时段未到校','2026-06-12',NULL,'minor','system')
 GO
 
 -- 13. 黑名单 (1条)
@@ -469,6 +485,6 @@ GO
 
 PRINT N'========================================'
 PRINT N'数据库 CampusVisitorDB 初始化完成！'
-PRINT N'共创建 16 张表，插入测试数据'
+PRINT N'共创建 16 张表，插入种子数据'
 PRINT N'========================================'
 GO

@@ -115,7 +115,7 @@ function quickLogin(role) {
   const accounts = {
     visitor: { phone: '13800138001', password: '123456' },
     admin: { phone: '13800138000', password: '123456' },
-    security: { phone: '13800138002', password: '123456' },
+    security: { phone: '13900139001', password: '123456' },
   }
   const acc = accounts[role]
   form.phone = acc.phone

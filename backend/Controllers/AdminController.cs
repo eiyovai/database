@@ -1,8 +1,10 @@
+using CampusVisitorApi.Data;
 using CampusVisitorApi.DTOs;
 using CampusVisitorApi.Models;
 using CampusVisitorApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampusVisitorApi.Controllers;
 
@@ -12,13 +14,23 @@ namespace CampusVisitorApi.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _service;
+    private readonly IEntryExitService _entryExitService;
+    private readonly CampusVisitorDbContext _db;
 
-    public AdminController(IAdminService service) => _service = service;
+    public AdminController(IAdminService service, IEntryExitService entryExitService, CampusVisitorDbContext db)
+    {
+        _service = service;
+        _entryExitService = entryExitService;
+        _db = db;
+    }
 
     // === Dashboard ===
     [HttpGet("admin/dashboard")]
     public async Task<ActionResult<DashboardStatsResponse>> GetDashboard()
-        => Ok(await _service.GetDashboardStatsAsync());
+    {
+        await _entryExitService.AutoDetectViolationsAsync(); // 自动检测违规
+        return Ok(await _service.GetDashboardStatsAsync());
+    }
 
     // === Open Rules ===
     [HttpGet("open-rules")]
@@ -70,6 +82,29 @@ public class AdminController : ControllerBase
         return Ok(new { message = "已移出黑名单" });
     }
 
+    // === Violations ===
+    [HttpGet("violations")]
+    public async Task<ActionResult> GetViolations()
+    {
+        var violations = await _db.ViolationRecords
+            .Include(v => v.User)
+            .OrderByDescending(v => v.CreatedAt)
+            .Select(v => new
+            {
+                v.Id,
+                UserName = v.User.Name,
+                v.ViolationType,
+                v.Description,
+                v.Location,
+                v.Severity,
+                v.SourceType,
+                v.OccurredAt,
+                v.CreatedAt,
+            })
+            .ToListAsync();
+        return Ok(violations);
+    }
+
     // === Schedules ===
     [HttpGet("schedules")]
     public async Task<ActionResult<List<StaffSchedule>>> GetSchedules()
@@ -85,9 +120,7 @@ public class AdminController : ControllerBase
     [HttpPut("schedules/{id}")]
     public async Task<ActionResult> UpdateSchedule(int id, [FromBody] CreateScheduleRequest request)
     {
-        // Simplified: delete + recreate
-        await _service.DeleteScheduleAsync(id);
-        await _service.CreateScheduleAsync(request);
+        await _service.UpdateScheduleAsync(id, request);
         return Ok(new { message = "排班已更新" });
     }
 
@@ -100,7 +133,7 @@ public class AdminController : ControllerBase
 
     // === Audit Logs ===
     [HttpGet("audit-logs")]
-    public async Task<ActionResult<List<AuditLog>>> GetAuditLogs(
+    public async Task<ActionResult<PagedResult<AuditLog>>> GetAuditLogs(
         [FromQuery] string? keyword, [FromQuery] string? actionType,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         => Ok(await _service.GetAuditLogsAsync(keyword, actionType, page, pageSize));

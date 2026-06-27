@@ -4,7 +4,18 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   {
     path: '/',
-    redirect: '/visitor/reservation',
+    redirect: (to) => {
+      // 动态重定向：根据 localStorage 中的角色信息决定跳转
+      const token = localStorage.getItem('token')
+      if (!token) return '/visitor/reservation'
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const roleRoutes = { admin: '/admin/dashboard', security: '/security/entry-check', staff: '/visitor/reservation', visitor: '/visitor/reservation' }
+        return roleRoutes[payload.role] || '/visitor/reservation'
+      } catch {
+        return '/visitor/reservation'
+      }
+    },
   },
   // ========== 访客端 ==========
   {
